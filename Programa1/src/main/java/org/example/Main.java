@@ -1,9 +1,17 @@
 package org.example;
 
-//TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
-// click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
+/* Programa 1 | POO Segundo Semestre 2025
+Elaborado por: Elías Lizano Valerio y Giancarlo Artavia Chavez
+Fecha de creación: 10/10/2025
+ */
+
+// Imports
+import  javax.swing.JFrame;
+import java.awt.*;
+
 public class Main {
     public static void main(String[] args) {
 
         }
     }
+
