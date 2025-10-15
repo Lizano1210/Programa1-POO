@@ -27,7 +27,7 @@ public class Password {
         this.temp = pTemp;
     }
 
-    // Setters y Getters
+    // Setters | Getters
     public String getIdUsuario() {return idUsuario;}
     public  void  setIdUsuario(String pIdUsuario) {this.idUsuario = pIdUsuario;}
     public String getPassword() {return password;}
@@ -36,6 +36,12 @@ public class Password {
     public void setTemp(boolean pTemp) {this.temp = pTemp;}
 
     // Métodos
+
+    public String toString() { return
+        "\n--- PASSWORD ---\n" +
+        "ID: " + idUsuario +
+        "\nTemporal: " + temp;
+    }
 
     public void encriptar(String password) {
         String nPsw; // Espacio de memoria para almacenar la contraseña encriptada
