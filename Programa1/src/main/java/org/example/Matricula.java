@@ -15,7 +15,7 @@ public class Matricula {
     public Matricula(Estudiante estudiante, Grupo grupo) {
         this.estudiante = estudiante;
         this.grupo = grupo;
-        this.fechaMatricula = LocalDate.now();
+        this.fechaMatricula = LocalDate.now() ;
         this.calificacionFinal = 0.0;
     }
 
