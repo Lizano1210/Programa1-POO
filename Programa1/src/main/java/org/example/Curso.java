@@ -1,5 +1,5 @@
 package org.example;
-
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -128,20 +128,48 @@ public class Curso {
 
     // Métodos
 
-    public String toString() {return
-        "ID: " + id +
-        "\nNombre: " + nombre +
-        "\nDescripción: " + descripcion +
-        "\nHoras al día: " + hrsDia +
-        "\nModalidad: " + modalidad +
-        "\nMínimo de estudiantes: " + minEstu +
-        "\nMáximo de estudiantes: " + maxEstu +
-        "\nTipo: " + tipo +
-        "\nCalificación mínima para aprobar: " + aprobCalificacion;
+    public String toString() {
+        System.out.printf(
+                "\n===== CURSO =====\n" +
+                "ID: %s\n" +
+                "Nombre: %s\n" +
+                "Descripción: %s\n" +
+                "Horas al día: %d\n" +
+                "Modalidad: %s\n" +
+                "Mínimo de estudiantes: %d\n" +
+                "Máximo de estudiantes: %d\n" +
+                "Tipo: %s\n" +
+                "Calificación mínima para aprobar: %d\n" +
+                "Grupos registrados: ",
+                id,
+                nombre,
+                descripcion,
+                hrsDia,
+                modalidad,
+                minEstu,
+                maxEstu,
+                tipo,
+                aprobCalificacion);
+        mostrarGrupos();
+        return "";
     }
 
-    public void crearGrupo() {}
+    public void crearGrupo(LocalDate fechaInicio, LocalDate fechaFinal) {
+        Grupo nuevoGrupo = new Grupo(this, fechaInicio, fechaFinal);
+        grupos.add(nuevoGrupo);
+        System.out.println("Grupo #" + nuevoGrupo.getIdGrupo() + " creado exitosamente.");
+    }
 
-    public void mostrarGrupos() {}
-    // RECORDARTORIO: Iterar sobre la lista de grupos llamando al toString
+    public void mostrarGrupos() {
+        if (grupos.isEmpty()) {
+            System.out.println("No hay grupos registrados para este curso.");
+            return;
+        }
+
+        System.out.println("\n========== GRUPOS DEL CURSO: " + nombre + " ==========\n");
+        for (Grupo grupo : grupos) {
+            System.out.println(grupo);
+            System.out.println("─".repeat(50) + "\n");
+        }
+    }
 }
