@@ -172,4 +172,9 @@ public class Curso {
             System.out.println("─".repeat(50) + "\n");
         }
     }
+
+    public boolean validarDatos() {
+        return checkNombre(this.nombre) && checkId(this.id) && checkCal(this.aprobCalificacion) &&
+                checkMaxEstu(this.maxEstu) && checkMinEstu(this.minEstu) && checkHrsDia(this.hrsDia) && checkDesc(this.descripcion);
+    }
 }
