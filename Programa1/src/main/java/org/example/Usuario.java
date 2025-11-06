@@ -196,4 +196,7 @@ public abstract class Usuario {
         return resultado.toString();
     }
 
+    public String obtenerNombreCompleto() {
+        return String.format("%s %s %s", nombre, apellido1, apellido2);
+    }
 }
