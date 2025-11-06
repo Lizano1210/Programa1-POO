@@ -68,7 +68,7 @@ public class Matricula {
         } else {
             double suma = 0.0;
             for (IntentoEvaluacion i : intentosEvaluacion) {
-                suma += i.getCalificacion(); // <-- Usa calificación del intento
+                suma += i.getCalificacion(); // Usa calificación del intento
             }
             calificacionFinal = clampCalificacion(suma / intentosEvaluacion.size());
         }
