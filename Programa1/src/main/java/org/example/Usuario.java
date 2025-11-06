@@ -186,14 +186,14 @@ public abstract class Usuario {
     }
 
     // Helper privado para generar contraseña segura
-    private String generarContrasenaTemporal(int length) {
-        final String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%&*()-_=+";
-        java.security.SecureRandom rnd = new java.security.SecureRandom();
-        StringBuilder sb = new StringBuilder(length);
-        for (int i = 0; i < length; i++) {
-            sb.append(chars.charAt(rnd.nextInt(chars.length())));
+    private String generarContrasenaTemporal(int longitud) {
+        final String caracteres = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%&*()-_=+";
+        java.security.SecureRandom generadorSeguro = new java.security.SecureRandom();
+        StringBuilder resultado = new StringBuilder(longitud);
+        for (int indice = 0; indice < longitud; indice++) {
+            resultado.append(caracteres.charAt(generadorSeguro.nextInt(caracteres.length())));
         }
-        return sb.toString();
+        return resultado.toString();
     }
 
 }
