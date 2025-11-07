@@ -5,23 +5,19 @@ import java.awt.*;
 import java.util.function.BiConsumer;
 
 /**
- * Panel de login con identificación y contraseña.
- * Expone callbacks para Ingresar y Recuperar.
+ Panel de login con identificación y contraseña.
  */
 public class LoginPanel extends JPanel {
-
-    // --- Controles ---
+    // Componentes
     private final JTextField txtIdentificacion = new JTextField(18);
     private final JPasswordField pwdContrasena = new JPasswordField(18);
     private final JButton btnIngresar = new JButton("Ingresar");
     private final JButton btnRecuperar = new JButton("Olvidé mi contraseña");
     private final JCheckBox chkMostrar = new JCheckBox("Mostrar");
     private final JLabel lblMensaje = new JLabel(" ");
+    private final char echoDefault; // para tapar contraseña
 
-    // Carácter de enmascaramiento original del password field (solución A)
-    private final char echoDefault;
-
-    // --- Callbacks ---
+    // callbacks que usamos para validar lo que ingrese el usuario
     private BiConsumer<String, char[]> onLogin;
     private java.util.function.Consumer<String> onRecover;
 
@@ -62,40 +58,25 @@ public class LoginPanel extends JPanel {
         c.gridx = 2; c.gridy = 2; c.weightx = 0;
         add(chkMostrar, c);
 
-        // Fila 3: recuperar
+        // Fila 3: ingresar
         c.gridx = 1; c.gridy = 3; c.gridwidth = 1; c.weightx = 0;
-        add(btnRecuperar, c);
-
-        // Fila 4: ingresar
-        c.gridx = 1; c.gridy = 4;
         add(btnIngresar, c);
+
+        // Fila 4: recuperar
+        c.gridx = 1; c.gridy = 4;
+        add(btnRecuperar, c);
 
         // Fila 5: mensajes
         c.gridx = 0; c.gridy = 5; c.gridwidth = 3;
         lblMensaje.setForeground(new Color(180, 0, 0));
         add(lblMensaje, c);
 
-        // Accesibilidad: mnemonics y relación label-for
-        lblId.setDisplayedMnemonic('I');
-        lblId.setLabelFor(txtIdentificacion);
-        lblPass.setDisplayedMnemonic('C');
-        lblPass.setLabelFor(pwdContrasena);
-
-        // Guardar el echo char original (solución A)
+        // Guardar el echo char original
         this.echoDefault = pwdContrasena.getEchoChar();
 
         // Toggle mostrar/ocultar contraseña
         chkMostrar.addActionListener(e ->
                 pwdContrasena.setEchoChar(chkMostrar.isSelected() ? (char) 0 : echoDefault));
-
-        // Enter como atajo para "Ingresar"
-        getInputMap(WHEN_ANCESTOR_OF_FOCUSED_COMPONENT)
-                .put(KeyStroke.getKeyStroke("ENTER"), "login");
-        getActionMap().put("login", new AbstractAction() {
-            @Override public void actionPerformed(java.awt.event.ActionEvent e) {
-                intentarLogin();
-            }
-        });
 
         // Botones
         btnIngresar.addActionListener(e -> intentarLogin());
@@ -104,18 +85,42 @@ public class LoginPanel extends JPanel {
         });
     }
 
-    /** Asigna callback que se invoca al presionar Ingresar. */
+    // callback que se asigna al ingresar
     public void setOnLogin(BiConsumer<String, char[]> onLogin) { this.onLogin = onLogin; }
 
-    /** Asigna callback que se invoca al presionar Recuperar. */
+    // callback que se activa al recuperar contraseña
     public void setOnRecover(java.util.function.Consumer<String> onRecover) { this.onRecover = onRecover; }
 
-    /** Muestra un mensaje bajo el formulario. */
+    // muestra los mensajes de error
     public void setMensaje(String msg) { lblMensaje.setText(msg == null ? " " : msg); }
 
-    // --- Internos ---
     private void intentarLogin() {
-        if (onLogin != null) onLogin.accept(txtIdentificacion.getText().trim(), pwdContrasena.getPassword());
+        // Validación local antes de delegar
+        String id = txtIdentificacion.getText().trim();
+        char[] pass = pwdContrasena.getPassword();
+
+        if (id.isEmpty()) {
+            setMensaje("Ingrese su identificación.");
+            txtIdentificacion.requestFocusInWindow();
+            return;
+        }
+        if (pass == null || pass.length == 0) {
+            setMensaje("Ingrese su contraseña.");
+            pwdContrasena.requestFocusInWindow();
+            return;
+        }
+
+        if (onLogin != null) {
+            try {
+                onLogin.accept(id, pass);
+            } catch (IllegalArgumentException ex) {
+                // Errores mostrados al usuario
+                setMensaje(ex.getMessage() == null ? "Datos inválidos." : ex.getMessage());
+            } catch (Exception ex) {
+                setMensaje("Ocurrió un error al iniciar sesión.");
+            }
+        }
     }
 }
+
 
