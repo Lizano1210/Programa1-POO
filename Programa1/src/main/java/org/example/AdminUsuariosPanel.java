@@ -18,6 +18,8 @@ public class AdminUsuariosPanel extends JPanel {
     private final EstudiantesModel estudiantesModel = new EstudiantesModel();
     private final ProfesoresModel profesoresModel = new ProfesoresModel();
 
+    private final Autenticacion auth = new Autenticacion();
+
     public AdminUsuariosPanel(UsuarioService servicio) {
         this.servicio = servicio;
         setLayout(new BorderLayout());
@@ -32,6 +34,7 @@ public class AdminUsuariosPanel extends JPanel {
         refrescarTablas();
     }
 
+    // Estudiantes
     private JPanel crearPanelEstudiantes() {
         JPanel p = new JPanel(new BorderLayout());
 
@@ -69,14 +72,55 @@ public class AdminUsuariosPanel extends JPanel {
                     : "No se pudo restablecer la contraseña.");
         });
 
-        // TODO: cuando me confirmes los campos del formulario, implemento estas 3:
-        btnNuevo.addActionListener(e -> showInfo("Pendiente: formulario de nuevo estudiante."));
-        btnEditar.addActionListener(e -> showInfo("Pendiente: formulario de edición."));
-        btnEliminar.addActionListener(e -> showInfo("Pendiente: confirmación y eliminación."));
+        btnNuevo.addActionListener(e -> {
+            AdminEstudianteDialog dlg = new AdminEstudianteDialog(SwingUtilities.getWindowAncestor(this), null);
+            dlg.setVisible(true);
+            Estudiante nuevo = dlg.getResultado();
+            if (nuevo != null) {
+                try {
+                    servicio.agregarEstudiante(nuevo);
+                    Password pw = new Password(nuevo.getIdUsuario(), "", false);
+                    pw.encriptar("secret");
+                    auth.upsertUsuario(nuevo.getIdUsuario(), nuevo.getCorreo(), Roles.ESTUDIANTE, pw);
+                    refrescarTablas();
+                    JOptionPane.showMessageDialog(this, "Estudiante agregado.", "OK", JOptionPane.INFORMATION_MESSAGE);
+                } catch (Exception ex2) {
+                    JOptionPane.showMessageDialog(this, ex2.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+
+        btnEditar.addActionListener(e -> {
+            Estudiante sel = getEstudianteSeleccionado();
+            if (sel == null) { showInfo("Seleccione un estudiante."); return; }
+            AdminEstudianteDialog dlg = new AdminEstudianteDialog(SwingUtilities.getWindowAncestor(this), sel);
+            dlg.setVisible(true);
+            Estudiante editado = dlg.getResultado();
+            if (editado != null) {
+                try {
+                    servicio.actualizarEstudiante(editado);
+                    refrescarTablas();
+                    JOptionPane.showMessageDialog(this, "Estudiante actualizado.", "OK", JOptionPane.INFORMATION_MESSAGE);
+                } catch (Exception ex2) {
+                    JOptionPane.showMessageDialog(this, ex2.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+
+        btnEliminar.addActionListener(e -> {
+            Estudiante sel = getEstudianteSeleccionado();
+            if (sel == null) { showInfo("Seleccione un estudiante."); return; }
+            int r = JOptionPane.showConfirmDialog(this, "¿Eliminar al estudiante " + sel.getNombre() + "?", "Confirmar", JOptionPane.YES_NO_OPTION);
+            if (r == JOptionPane.YES_OPTION) {
+                servicio.eliminarEstudiante(sel);
+                refrescarTablas();
+            }
+        });
 
         return p;
     }
 
+    // Profesores
     private JPanel crearPanelProfesores() {
         JPanel p = new JPanel(new BorderLayout());
 
@@ -111,9 +155,50 @@ public class AdminUsuariosPanel extends JPanel {
                     : "No se pudo restablecer la contraseña.");
         });
 
-        btnNuevo.addActionListener(e -> showInfo("Pendiente: formulario de nuevo profesor."));
-        btnEditar.addActionListener(e -> showInfo("Pendiente: formulario de edición."));
-        btnEliminar.addActionListener(e -> showInfo("Pendiente: confirmación y eliminación."));
+        btnNuevo.addActionListener(e -> {
+            AdminProfesorDialog dlg = new AdminProfesorDialog(SwingUtilities.getWindowAncestor(this), null);
+            dlg.setVisible(true);
+            Profesor nuevo = dlg.getResultado();
+            if (nuevo != null) {
+                try {
+                    servicio.agregarProfesor(nuevo);
+                    Password pw = new Password(nuevo.getIdUsuario(), "", false);
+                    pw.encriptar("secret");
+                    auth.upsertUsuario(nuevo.getIdUsuario(), nuevo.getCorreo(), Roles.PROFESOR, pw);
+                    refrescarTablas();
+                    JOptionPane.showMessageDialog(this, "Profesor agregado.", "OK", JOptionPane.INFORMATION_MESSAGE);
+                } catch (Exception ex2) {
+                    JOptionPane.showMessageDialog(this, ex2.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+
+        btnEditar.addActionListener(e -> {
+            Profesor sel = getProfesorSeleccionado();
+            if (sel == null) { showInfo("Seleccione un profesor."); return; }
+            AdminProfesorDialog dlg = new AdminProfesorDialog(SwingUtilities.getWindowAncestor(this), sel);
+            dlg.setVisible(true);
+            Profesor editado = dlg.getResultado();
+            if (editado != null) {
+                try {
+                    servicio.actualizarProfesor(editado);
+                    refrescarTablas();
+                    JOptionPane.showMessageDialog(this, "Profesor actualizado.", "OK", JOptionPane.INFORMATION_MESSAGE);
+                } catch (Exception ex2) {
+                    JOptionPane.showMessageDialog(this, ex2.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+
+        btnEliminar.addActionListener(e -> {
+            Profesor sel = getProfesorSeleccionado();
+            if (sel == null) { showInfo("Seleccione un profesor."); return; }
+            int r = JOptionPane.showConfirmDialog(this, "¿Eliminar al profesor " + sel.getNombre() + "?", "Confirmar", JOptionPane.YES_NO_OPTION);
+            if (r == JOptionPane.YES_OPTION) {
+                servicio.eliminarProfesor(sel);
+                refrescarTablas();
+            }
+        });
 
         return p;
     }

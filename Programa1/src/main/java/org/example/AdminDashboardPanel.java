@@ -29,7 +29,8 @@ public class AdminDashboardPanel extends JPanel {
 
         // cards de los botones
         centerCards.add(new AdminUsuariosPanel(usuarioService), "USUARIOS");
-        centerCards.add(crearPlaceholder("Módulo de Cursos & Grupos (pendiente)"), "CURSOS");
+        CursoServiceMem cursoService = new CursoServiceMem(usuarioService);
+        centerCards.add(new AdminCursosPanel(cursoService, usuarioService), "CURSOS");
         centerCards.add(crearPlaceholder("Módulo de Reportes (pendiente)"), "REPORTES");
         add(centerCards, BorderLayout.CENTER);
 

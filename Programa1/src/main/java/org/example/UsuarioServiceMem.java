@@ -20,6 +20,11 @@ public class UsuarioServiceMem implements UsuarioService {
 
 // para testeo
     public void seedDemo() {
+        //admin
+        Password pwAdmin = new Password("admin", "", false);
+        pwAdmin.encriptar("password");
+        auth.upsertUsuario("admin", "admin@demo.com", Roles.ADMIN, pwAdmin);
+
         // estudiantes
         Estudiante e1 = new Estudiante(
                 "Ana", "Zúñiga", "Soto",
@@ -29,7 +34,7 @@ public class UsuarioServiceMem implements UsuarioService {
         Estudiante e2 = new Estudiante(
                 "Bruno", "Mora", "Lopez",
                 "E101", "88880002", "bruno.mora@demo.com", "Heredia, centro",
-                "TEC", java.util.List.of("Estructuras", "BD I")
+                "TEC", java.util.List.of("Estructuras", "Bases de Datos I")
         );
         Estudiante e3 = new Estudiante(
                 "Carla", "Rojas", "Vargas",
