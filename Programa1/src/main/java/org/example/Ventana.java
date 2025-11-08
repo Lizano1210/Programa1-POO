@@ -41,7 +41,14 @@ public class Ventana extends JFrame {
         // Placeholders de dashboards (luego reemplazas por paneles reales)
         mainContainer.add(crearPlaceholder("Dashboard Estudiante"), "ESTUDIANTE");
         mainContainer.add(crearPlaceholder("Dashboard Profesor"), "PROFESOR");
-        mainContainer.add(crearPlaceholder("Dashboard Admin"), "ADMIN");
+
+        // Administrador
+        UsuarioServiceMem usuarioService = new UsuarioServiceMem(auth);
+        usuarioService.seedDemo(); // datos de prueba
+
+        AdminDashboardPanel admin = new AdminDashboardPanel(usuarioService);
+        mainContainer.add(admin, "ADMIN");
+
     }
 
     /** Procesa login con Autenticacion y muestra la vista del rol o error. */

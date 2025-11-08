@@ -11,16 +11,8 @@ public class Estudiante extends Usuario {
     private List<Matricula> matriculas = new ArrayList<>(); // Cursos matriculados
 
     // Constructor completo que llama al de Usuario
-    public Estudiante(
-            String nombre,
-            String apellido1,
-            String apellido2,
-            String idUsuario,
-            String telefono,
-            String correo,
-            String direccion,
-            String orgDL,
-            List<String> temIN
+    public Estudiante(String nombre, String apellido1, String apellido2, String idUsuario, String telefono,
+            String correo, String direccion, String orgDL, List<String> temIN
     ) {
         super(nombre, apellido1, apellido2, idUsuario, telefono, correo, direccion);
         setOrgDL(orgDL);
