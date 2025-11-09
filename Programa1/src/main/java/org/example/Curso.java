@@ -41,14 +41,14 @@ public class Curso {
 
     public String getNombre() {return nombre;}
     public void setNombre(String pNombre) {
-        if (checkId(pNombre)) {
+        if (checkNombre(pNombre)) {
             this.nombre = pNombre;
         } else {throw new IllegalArgumentException("NOMBRE: PARAMETRO INGRESADO ES INVALIDO!");}
     }
 
     public String getDescripcion() {return descripcion;}
     public void setDescripcion(String pDesc) {
-        if (checkId(pDesc)) {
+        if (checkDesc(pDesc)) {
             this.descripcion = pDesc;
         } else {throw new IllegalArgumentException("DESCRIPCION: PARAMETRO INGRESADO ES INVALIDO!");}
     }
