@@ -10,9 +10,14 @@ public class AdminDashboardPanel extends JPanel {
 
     private final JPanel centerCards = new JPanel(new CardLayout());
     private final UsuarioService usuarioService;
+    private final CursoService cursoService;        // ← nuevo
+    private final ReporteService reporteService;    // ← nuevo
 
-    public AdminDashboardPanel(UsuarioService usuarioService) {
+    public AdminDashboardPanel(UsuarioService usuarioService, CursoService cursoService,
+                               ReporteService reporteService) {
         this.usuarioService = usuarioService;
+        this.cursoService = cursoService;
+        this.reporteService = reporteService;
 
         setLayout(new BorderLayout());
 
@@ -27,11 +32,10 @@ public class AdminDashboardPanel extends JPanel {
         nav.add(btnReportes);
         add(nav, BorderLayout.WEST);
 
-        // cards de los botones
+        // cards de los botones  (ya NO creamos CursoServiceMem aquí)
         centerCards.add(new AdminUsuariosPanel(usuarioService), "USUARIOS");
-        CursoServiceMem cursoService = new CursoServiceMem(usuarioService);
         centerCards.add(new AdminCursosPanel(cursoService, usuarioService), "CURSOS");
-        centerCards.add(crearPlaceholder("Módulo de Reportes (pendiente)"), "REPORTES");
+        centerCards.add(new AdminReportesPanel(cursoService, reporteService), "REPORTES"); // ← reemplaza placeholder
         add(centerCards, BorderLayout.CENTER);
 
         // botones
@@ -54,3 +58,4 @@ public class AdminDashboardPanel extends JPanel {
         return p;
     }
 }
+

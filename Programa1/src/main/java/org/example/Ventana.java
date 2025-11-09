@@ -11,6 +11,7 @@ public class Ventana extends JFrame {
     private final JPanel mainContainer = new JPanel(new CardLayout());
     private final Autenticacion auth = new Autenticacion();
 
+
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new Ventana().setVisible(true));
     }
@@ -43,11 +44,18 @@ public class Ventana extends JFrame {
         mainContainer.add(crearPlaceholder("Dashboard Profesor"), "PROFESOR");
 
         // Administrador
+
         UsuarioServiceMem usuarioService = new UsuarioServiceMem(auth);
         usuarioService.seedDemo(); // datos de prueba
 
-        AdminDashboardPanel admin = new AdminDashboardPanel(usuarioService);
+        // Cursos & Grupos
+        CursoService cursoService = new CursoServiceMem(usuarioService);
+        // Reportes
+        ReporteService reporteService = new ReporteServicePdf(cursoService, usuarioService);
+
+        AdminDashboardPanel admin = new AdminDashboardPanel(usuarioService, cursoService, reporteService);
         mainContainer.add(admin, "ADMIN");
+
 
     }
 
