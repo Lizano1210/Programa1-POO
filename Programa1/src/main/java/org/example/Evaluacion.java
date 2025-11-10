@@ -173,8 +173,8 @@ public class Evaluacion {
         if (gruposAsociados == null || gruposAsociados.isEmpty()) return true;
         if (fechaReferencia == null) fechaReferencia = LocalDate.now();
         for (EvaluacionAsignada ea : gruposAsociados) {
-            if (ea == null || ea.grupo == null) continue;
-            if (ea.grupo.getFechaFinal() != null && !ea.grupo.getFechaFinal().isBefore(fechaReferencia)) {
+            if (ea == null || ea.getGrupo() == null) continue;
+            if (ea.getGrupo().getFechaFinal() != null && !ea.getGrupo().getFechaFinal().isBefore(fechaReferencia)) {
                 return false; // grupo vigente: no se puede modificar
             }
         }
@@ -188,8 +188,8 @@ public class Evaluacion {
      * @return {@code true} si puede desasociarse
      */
     public boolean canDesasociar(EvaluacionAsignada asignacion) {
-        if (asignacion == null || asignacion.fechaHoraInicio == null) return false;
-        return asignacion.fechaHoraInicio.isAfter(LocalDateTime.now());
+        if (asignacion == null || asignacion.getFechaHoraInicio() == null) return false;
+        return asignacion.getFechaHoraInicio().isAfter(LocalDateTime.now());
     }
 
     /**
@@ -201,8 +201,8 @@ public class Evaluacion {
         if (gruposAsociados == null || gruposAsociados.isEmpty()) return true;
         LocalDateTime now = LocalDateTime.now();
         for (EvaluacionAsignada ea : gruposAsociados) {
-            if (ea == null || ea.fechaHoraInicio == null) return false;
-            if (!ea.fechaHoraInicio.isAfter(now)) return false;
+            if (ea == null || ea.getFechaHoraInicio() == null) return false;
+            if (!ea.getFechaHoraInicio().isAfter(now)) return false;
         }
         return true;
     }
