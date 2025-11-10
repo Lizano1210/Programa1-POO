@@ -6,25 +6,51 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Panel gráfico que permite al profesor gestionar sus evaluaciones.
+ * <p>
+ * Incluye funciones para crear, editar, eliminar y visualizar las evaluaciones
+ * creadas por el profesor, además de mantener sincronizada la lista de
+ * evaluaciones en memoria del propio objeto {@link Profesor}.
+ * </p>
+ */
 public class ProfesorEvaluacionesPanel extends JPanel {
 
+    // -- Atributos principales --
+
+    /** Profesor actualmente autenticado. */
     private final Profesor profesor;
+
+    /** Servicio de evaluaciones utilizado para operaciones CRUD. */
     private final EvaluacionService evaluacionService;
 
+    // -- Componentes de interfaz --
+
+    /** Modelo de datos para la tabla de evaluaciones. */
     private final TablaModel model = new TablaModel();
+
+    /** Tabla principal donde se muestran las evaluaciones. */
     private final JTable tabla = new JTable(model);
 
+    // -- Constructor --
+
+    /**
+     * Crea un nuevo panel para gestionar las evaluaciones de un profesor.
+     *
+     * @param profesor profesor que utilizará el panel
+     * @param evaluacionService servicio de evaluaciones
+     */
     public ProfesorEvaluacionesPanel(Profesor profesor, EvaluacionService evaluacionService) {
         this.profesor = profesor;
         this.evaluacionService = evaluacionService;
 
-        setLayout(new BorderLayout(8,8));
+        setLayout(new BorderLayout(8, 8));
 
-        // Tabla
+        // -- Configuración de tabla --
         tabla.setFillsViewportHeight(true);
         add(new JScrollPane(tabla), BorderLayout.CENTER);
 
-        // Botonera
+        // -- Botonera inferior --
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         JButton btnCrear = new JButton("Crear");
         JButton btnEditar = new JButton("Editar");
@@ -37,7 +63,7 @@ public class ProfesorEvaluacionesPanel extends JPanel {
         actions.add(btnRefrescar);
         add(actions, BorderLayout.SOUTH);
 
-        // Eventos
+        // -- Eventos --
         btnRefrescar.addActionListener(e -> cargar());
         btnCrear.addActionListener(e -> onCrear());
         btnEditar.addActionListener(e -> onEditar());
@@ -46,17 +72,28 @@ public class ProfesorEvaluacionesPanel extends JPanel {
         cargar();
     }
 
-    /** Carga para esta tabla (desde el service). Las otras pestañas leen de profesor.getEvaluaciones(). */
+    // -- Carga de datos --
+
+    /**
+     * Carga la lista de evaluaciones del profesor desde el servicio.
+     * <p>
+     * La tabla se actualiza con los datos más recientes del servicio.
+     * </p>
+     */
     private void cargar() {
         List<Evaluacion> lista = evaluacionService.listarPorProfesor(profesor.getIdUsuario());
         model.setData(lista);
     }
 
+    /** Obtiene la evaluación actualmente seleccionada en la tabla. */
     private Evaluacion seleccionada() {
         int r = tabla.getSelectedRow();
         return r < 0 ? null : model.getAt(r);
     }
 
+    // -- Creación, edición y eliminación --
+
+    /** Abre el diálogo para crear una nueva evaluación. */
     private void onCrear() {
         EditorEvaluacionDialog dlg = new EditorEvaluacionDialog(
                 SwingUtilities.getWindowAncestor(this), null
@@ -71,24 +108,25 @@ public class ProfesorEvaluacionesPanel extends JPanel {
                     return;
                 }
 
-                // 1) Service
+                // 1) Guardar en el servicio
                 evaluacionService.crear(profesor.getIdUsuario(), nueva);
 
                 // 2) Sincronizar con la lista del profesor
                 agregarAlProfesor(nueva);
 
-                JOptionPane.showMessageDialog(this, "Evaluación creada.");
-                cargar(); // refresca la tabla local
+                JOptionPane.showMessageDialog(this, "Evaluación creada exitosamente.");
+                cargar();
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, ex.getMessage(), "No se pudo crear", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, ex.getMessage(), "Error al crear evaluación", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
 
+    /** Abre el diálogo para editar una evaluación seleccionada. */
     private void onEditar() {
         Evaluacion ev = seleccionada();
         if (ev == null) {
-            JOptionPane.showMessageDialog(this, "Seleccione una evaluación.");
+            JOptionPane.showMessageDialog(this, "Seleccione una evaluación para editar.");
             return;
         }
 
@@ -97,45 +135,42 @@ public class ProfesorEvaluacionesPanel extends JPanel {
 
         if (dlg.isGuardado()) {
             try {
-                // 1) Service
                 evaluacionService.actualizar(profesor.getIdUsuario(), ev);
-
-                // 2) Sincronizar con la lista del profesor (reemplazo por id)
                 reemplazarEnProfesor(ev);
-
                 JOptionPane.showMessageDialog(this, "Evaluación actualizada.");
                 cargar();
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, ex.getMessage(), "No se pudo actualizar", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, ex.getMessage(), "Error al actualizar", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
 
+    /** Elimina una evaluación seleccionada del sistema y del profesor. */
     private void onEliminar() {
         Evaluacion ev = seleccionada();
         if (ev == null) {
-            JOptionPane.showMessageDialog(this, "Seleccione una evaluación.");
+            JOptionPane.showMessageDialog(this, "Seleccione una evaluación para eliminar.");
             return;
         }
+
         int ok = JOptionPane.showConfirmDialog(this, "¿Eliminar la evaluación \"" + ev.getNombre() + "\"?",
-                "Confirmar", JOptionPane.YES_NO_OPTION);
+                "Confirmar eliminación", JOptionPane.YES_NO_OPTION);
+
         if (ok == JOptionPane.YES_OPTION) {
             try {
-                // 1) Service
                 evaluacionService.eliminar(profesor.getIdUsuario(), ev.getId());
-
-                // 2) Sincronizar lista del profesor
                 eliminarDeProfesor(ev);
-
                 JOptionPane.showMessageDialog(this, "Evaluación eliminada.");
                 cargar();
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, ex.getMessage(), "No se pudo eliminar", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, ex.getMessage(), "Error al eliminar", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
 
-    // ---------- Sincronización con profesor.getEvaluaciones() ----------
+    // -- Sincronización con la lista interna del profesor --
+
+    /** Asegura que la lista de evaluaciones del profesor sea mutable. */
     private void asegurarListaMutableProfesor() {
         List<Evaluacion> list = profesor.getEvaluaciones();
         if (list == null) {
@@ -145,16 +180,18 @@ public class ProfesorEvaluacionesPanel extends JPanel {
         }
     }
 
+    /** Agrega una nueva evaluación al listado del profesor. */
     private void agregarAlProfesor(Evaluacion ev) {
         if (ev == null) return;
         asegurarListaMutableProfesor();
         List<Evaluacion> list = profesor.getEvaluaciones();
         for (Evaluacion e : list) {
-            if (e != null && e.getId() == ev.getId()) return; // evitar duplicado por id
+            if (e != null && e.getId() == ev.getId()) return; // evita duplicados
         }
         list.add(ev);
     }
 
+    /** Reemplaza una evaluación existente en el listado del profesor. */
     private void reemplazarEnProfesor(Evaluacion ev) {
         if (ev == null) return;
         asegurarListaMutableProfesor();
@@ -166,10 +203,10 @@ public class ProfesorEvaluacionesPanel extends JPanel {
                 return;
             }
         }
-        // si no estaba (por alguna razón), agrégala
-        list.add(ev);
+        list.add(ev); // si no estaba, se agrega
     }
 
+    /** Elimina una evaluación del listado del profesor. */
     private void eliminarDeProfesor(Evaluacion ev) {
         if (ev == null) return;
         List<Evaluacion> list = profesor.getEvaluaciones();
@@ -177,16 +214,26 @@ public class ProfesorEvaluacionesPanel extends JPanel {
         list.removeIf(x -> x != null && x.getId() == ev.getId());
     }
 
-    // ---------- Tabla ----------
+    // -- Modelo de tabla --
+
+    /**
+     * Modelo de tabla para mostrar las evaluaciones del profesor.
+     */
     static class TablaModel extends AbstractTableModel {
-        private final String[] cols = {"ID", "Nombre", "Duración (min)", "# Preguntas", "Puntaje total", "Aleatoriedad"};
+        private final String[] cols = {
+                "ID", "Nombre", "Duración (min)", "# Preguntas",
+                "Puntaje total", "Aleatoriedad"
+        };
+
         private List<Evaluacion> data = new ArrayList<>();
 
+        /** Actualiza los datos mostrados en la tabla. */
         public void setData(List<Evaluacion> list) {
             data = (list == null) ? new ArrayList<>() : new ArrayList<>(list);
             fireTableDataChanged();
         }
 
+        /** Obtiene la evaluación en la fila indicada. */
         public Evaluacion getAt(int row) { return data.get(row); }
 
         @Override public int getRowCount() { return data.size(); }
@@ -209,4 +256,5 @@ public class ProfesorEvaluacionesPanel extends JPanel {
         }
     }
 }
+
 

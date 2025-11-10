@@ -10,25 +10,42 @@ import java.util.*;
 import java.util.List;
 
 /**
- * Permite al profesor:
- *  - Seleccionar uno de sus Grupos
- *  - Ver las EvaluacionesAsignadas del grupo
- *  - Asignar una Evaluacion (propia) con fecha/hora de inicio
- *  - Eliminar una asignación (si procede)
- *
- * Persistencia: trabaja en memoria sobre g.getEvaluacionesAsignadas().
+ * Panel de interfaz gráfica que permite al profesor gestionar las asignaciones
+ * de evaluaciones a sus grupos.
+ * <p>
+ * Funcionalidades principales:
+ * <ul>
+ *     <li>Seleccionar uno de sus grupos.</li>
+ *     <li>Visualizar las evaluaciones asignadas al grupo.</li>
+ *     <li>Asignar una nueva evaluación con fecha y hora de inicio.</li>
+ *     <li>Eliminar una asignación existente.</li>
+ * </ul>
+ * <p>
+ * Este panel trabaja completamente en memoria sobre la lista
+ * {@code g.getEvaluacionesAsignadas()} de cada grupo.
+ * </p>
  */
 public class ProfesorAsignacionesPanel extends JPanel {
 
+    // -- Servicios --
+
+    /** Servicio de usuarios utilizado para acceder a la información de profesores y estudiantes. */
     private final UsuarioServiceMem usuarioService;
+
+    /** Servicio de cursos utilizado para gestionar grupos. */
     private final CursoService cursoService;
-    private final EvaluacionService evaluacionService; // <-- NUEVO
+
+    /** Servicio de evaluaciones utilizado para listar evaluaciones del profesor. */
+    private final EvaluacionService evaluacionService;
+
+    /** Profesor actual que usa el panel. */
     private final Profesor profesor;
 
-    // UI
+    // -- Componentes de la interfaz --
+
     private final JComboBox<Grupo> cboGrupos = new JComboBox<>();
     private final JComboBox<Evaluacion> cboEvaluaciones = new JComboBox<>();
-    private final JSpinner spFechaHoraInicio; // Date + time
+    private final JSpinner spFechaHoraInicio;
     private final JButton btnAsignar = new JButton("Asignar");
     private final JButton btnEliminar = new JButton("Eliminar asignación");
     private final JButton btnRefrescar = new JButton("Refrescar");
@@ -36,20 +53,30 @@ public class ProfesorAsignacionesPanel extends JPanel {
     private final JTable tabla = new JTable();
     private final AsignacionesModel model = new AsignacionesModel();
 
+    // -- Constructor --
+
+    /**
+     * Crea un nuevo panel de asignaciones de evaluaciones para un profesor.
+     *
+     * @param usuarioService servicio de usuarios
+     * @param cursoService servicio de cursos
+     * @param evaluacionService servicio de evaluaciones
+     * @param profesor profesor que utilizará el panel
+     */
     public ProfesorAsignacionesPanel(UsuarioServiceMem usuarioService,
                                      CursoService cursoService,
-                                     EvaluacionService evaluacionService, // <-- NUEVO
+                                     EvaluacionService evaluacionService,
                                      Profesor profesor) {
         this.usuarioService = usuarioService;
         this.cursoService = cursoService;
-        this.evaluacionService = evaluacionService; // <-- NUEVO
+        this.evaluacionService = evaluacionService;
         this.profesor = profesor;
 
-        setLayout(new BorderLayout(8,8));
-        setBorder(BorderFactory.createEmptyBorder(12,12,12,12));
+        setLayout(new BorderLayout(8, 8));
+        setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
 
-        // Spinner de fecha/hora (usa java.util.Date; convertimos a LocalDateTime)
-        SpinnerDateModel dm = new SpinnerDateModel(new Date(), null, null, java.util.Calendar.MINUTE);
+        // Configuración del spinner de fecha y hora
+        SpinnerDateModel dm = new SpinnerDateModel(new Date(), null, null, Calendar.MINUTE);
         spFechaHoraInicio = new JSpinner(dm);
         JSpinner.DateEditor de = new JSpinner.DateEditor(spFechaHoraInicio, "yyyy-MM-dd HH:mm");
         spFechaHoraInicio.setEditor(de);
@@ -60,11 +87,13 @@ public class ProfesorAsignacionesPanel extends JPanel {
         wire();
     }
 
+    // -- Construcción de la interfaz --
+
+    /** Construye la estructura de la interfaz del panel. */
     private void construirUI() {
-        // Norte: filtros/inputs
         JPanel north = new JPanel(new GridBagLayout());
         GridBagConstraints c = new GridBagConstraints();
-        c.insets = new Insets(6,6,6,6);
+        c.insets = new Insets(6, 6, 6, 6);
         c.fill = GridBagConstraints.HORIZONTAL;
         c.weightx = 0;
 
@@ -81,12 +110,20 @@ public class ProfesorAsignacionesPanel extends JPanel {
         add(north, BorderLayout.NORTH);
         add(actions, BorderLayout.SOUTH);
 
-        // Centro: tabla de asignaciones
         tabla.setModel(model);
         tabla.setFillsViewportHeight(true);
         add(new JScrollPane(tabla), BorderLayout.CENTER);
     }
 
+    /** Agrega una fila con etiqueta y componente al panel norte. */
+    private void addRow(JPanel p, GridBagConstraints c, int row, String label, JComponent comp) {
+        c.gridx = 0; c.gridy = row; c.weightx = 0; p.add(new JLabel(label), c);
+        c.gridx = 1; c.gridy = row; c.weightx = 1; p.add(comp, c);
+    }
+
+    // -- Configuración de eventos --
+
+    /** Configura los eventos de los botones y combos del panel. */
     private void wire() {
         btnRefrescar.addActionListener(e -> {
             cargarCombos();
@@ -99,47 +136,50 @@ public class ProfesorAsignacionesPanel extends JPanel {
         btnEliminar.addActionListener(e -> onEliminar());
     }
 
-    private void addRow(JPanel p, GridBagConstraints c, int row, String label, JComponent comp) {
-        c.gridx = 0; c.gridy = row; c.weightx = 0; p.add(new JLabel(label), c);
-        c.gridx = 1; c.gridy = row; c.weightx = 1; p.add(comp, c);
-    }
+    // -- Carga de datos --
 
+    /** Carga los grupos y evaluaciones disponibles en los combos. */
     private void cargarCombos() {
-        // Grupos del profesor
         cboGrupos.removeAllItems();
-        List<Grupo> grupos = (profesor.getGrupos() == null) ? new ArrayList<>() : profesor.getGrupos();
+        List<Grupo> grupos = profesor.getGrupos() == null ? new ArrayList<>() : profesor.getGrupos();
         for (Grupo g : grupos) cboGrupos.addItem(g);
 
-        // Evaluaciones del profesor: AHORA desde el SERVICE (no desde profesor.getEvaluaciones())
         cboEvaluaciones.removeAllItems();
         List<Evaluacion> evals = evaluacionService.listarPorProfesor(profesor.getIdUsuario());
-        if (evals != null) {
-            for (Evaluacion e : evals) cboEvaluaciones.addItem(e);
-        }
+        if (evals != null) for (Evaluacion e : evals) cboEvaluaciones.addItem(e);
 
         if (cboGrupos.getItemCount() > 0) cboGrupos.setSelectedIndex(0);
         if (cboEvaluaciones.getItemCount() > 0) cboEvaluaciones.setSelectedIndex(0);
     }
 
+    /** Devuelve el grupo actualmente seleccionado. */
     private Grupo grupoSel() {
         Object o = cboGrupos.getSelectedItem();
         return (o instanceof Grupo g) ? g : null;
     }
 
+    /** Devuelve la evaluación actualmente seleccionada. */
     private Evaluacion evaluacionSel() {
         Object o = cboEvaluaciones.getSelectedItem();
         return (o instanceof Evaluacion e) ? e : null;
     }
 
+    /** Carga las evaluaciones asignadas al grupo seleccionado. */
     private void cargarAsignaciones() {
         Grupo g = grupoSel();
-        if (g == null) { model.setData(new ArrayList<>()); return; }
-        List<EvaluacionAsignada> asigs = (g.getEvaluacionesAsignadas() == null)
+        if (g == null) {
+            model.setData(new ArrayList<>());
+            return;
+        }
+        List<EvaluacionAsignada> asigs = g.getEvaluacionesAsignadas() == null
                 ? new ArrayList<>()
                 : g.getEvaluacionesAsignadas();
         model.setData(asigs);
     }
 
+    // -- Acciones principales --
+
+    /** Asigna una evaluación al grupo seleccionado en la fecha y hora indicadas. */
     private void onAsignar() {
         try {
             Grupo g = grupoSel();
@@ -147,14 +187,12 @@ public class ProfesorAsignacionesPanel extends JPanel {
             if (g == null) throw new IllegalStateException("Seleccione un grupo.");
             if (ev == null) throw new IllegalStateException("Seleccione una evaluación.");
 
-            // Obtener LocalDateTime desde el spinner
             java.util.Date fecha = (java.util.Date) spFechaHoraInicio.getValue();
             LocalDateTime inicio = LocalDateTime.ofInstant(
                     Instant.ofEpochMilli(fecha.getTime()),
                     ZoneId.systemDefault()
             );
 
-            // Evitar duplicados de la misma evaluación en el mismo grupo y misma fecha
             if (g.getEvaluacionesAsignadas() != null) {
                 for (EvaluacionAsignada ea : g.getEvaluacionesAsignadas()) {
                     if (ea != null && ea.getEvaluacion() != null
@@ -167,21 +205,21 @@ public class ProfesorAsignacionesPanel extends JPanel {
             }
 
             EvaluacionAsignada nueva = new EvaluacionAsignada(ev, g, inicio);
-            nueva.calcularFechaHoraFinal(); // según duración de la evaluación
+            nueva.calcularFechaHoraFinal();
 
-            if (g.getEvaluacionesAsignadas() == null) {
+            if (g.getEvaluacionesAsignadas() == null)
                 g.setEvaluacionesAsignadas(new ArrayList<>());
-            }
+
             g.getEvaluacionesAsignadas().add(nueva);
-
             cargarAsignaciones();
-            JOptionPane.showMessageDialog(this, "Evaluación asignada al grupo.");
 
+            JOptionPane.showMessageDialog(this, "Evaluación asignada al grupo.");
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, ex.getMessage(), "Error al asignar", JOptionPane.ERROR_MESSAGE);
         }
     }
 
+    /** Elimina la asignación seleccionada del grupo. */
     private void onEliminar() {
         int r = tabla.getSelectedRow();
         Grupo g = grupoSel();
@@ -189,11 +227,12 @@ public class ProfesorAsignacionesPanel extends JPanel {
             JOptionPane.showMessageDialog(this, "Seleccione un grupo y una asignación.");
             return;
         }
-        EvaluacionAsignada ea = model.getAt(r);
 
+        EvaluacionAsignada ea = model.getAt(r);
         int ok = JOptionPane.showConfirmDialog(this,
                 "¿Eliminar la asignación seleccionada?", "Confirmar",
                 JOptionPane.YES_NO_OPTION);
+
         if (ok != JOptionPane.YES_OPTION) return;
 
         try {
@@ -207,16 +246,23 @@ public class ProfesorAsignacionesPanel extends JPanel {
         }
     }
 
-    // ===== Modelo de tabla =====
+    // -- Modelo interno de tabla --
+
+    /**
+     * Modelo de tabla para mostrar las evaluaciones asignadas de un grupo.
+     */
     static class AsignacionesModel extends AbstractTableModel {
+
         private final String[] cols = {"Evaluación", "Inicio", "Fin", "Duración (min)"};
         private List<EvaluacionAsignada> data = new ArrayList<>();
 
+        /** Actualiza los datos mostrados en la tabla. */
         public void setData(List<EvaluacionAsignada> list) {
-            data = (list == null) ? new ArrayList<>() : new ArrayList<>(list);
+            data = list == null ? new ArrayList<>() : new ArrayList<>(list);
             fireTableDataChanged();
         }
 
+        /** Devuelve la asignación en la fila indicada. */
         public EvaluacionAsignada getAt(int r) { return data.get(r); }
 
         @Override public int getRowCount() { return data.size(); }
@@ -236,3 +282,4 @@ public class ProfesorAsignacionesPanel extends JPanel {
         }
     }
 }
+

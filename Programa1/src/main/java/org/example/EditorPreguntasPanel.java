@@ -6,12 +6,33 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Panel para gestionar las preguntas de una evaluación.
+ * <p>
+ * Permite agregar, editar, eliminar y reordenar preguntas de distintos tipos
+ * (Selección, Pareo, Sopa de Letras, etc.).
+ * </p>
+ */
 public class EditorPreguntasPanel extends JPanel {
 
+    // -- Atributos principales --
+
+    /** Evaluación actual a la que pertenecen las preguntas. */
     private final Evaluacion evaluacion;
+
+    /** Tabla que muestra la lista de preguntas. */
     private final JTable tabla = new JTable();
+
+    /** Modelo de datos de la tabla. */
     private final ModeloTabla model = new ModeloTabla();
 
+    // -- Constructor --
+
+    /**
+     * Crea el panel de gestión de preguntas para una evaluación.
+     *
+     * @param evaluacion evaluación a editar
+     */
     public EditorPreguntasPanel(Evaluacion evaluacion) {
         this.evaluacion = evaluacion;
         setLayout(new BorderLayout(8,8));
@@ -34,6 +55,7 @@ public class EditorPreguntasPanel extends JPanel {
         actions.add(btnBajar);
         add(actions, BorderLayout.SOUTH);
 
+        // Eventos
         btnAgregar.addActionListener(e -> onAgregar());
         btnEditar.addActionListener(e -> onEditar());
         btnEliminar.addActionListener(e -> onEliminar());
@@ -43,37 +65,57 @@ public class EditorPreguntasPanel extends JPanel {
         recargar();
     }
 
+    // -- Carga de datos --
+
+    /**
+     * Recarga la lista de preguntas desde la evaluación.
+     */
     private void recargar() {
         List<IPregunta> ps = evaluacion.getPreguntas();
         model.setData(ps == null ? new ArrayList<>() : new ArrayList<>(ps));
     }
 
+    // -- Selección --
+
+    /**
+     * Devuelve el índice de la fila seleccionada.
+     */
     private int filaSel() { return tabla.getSelectedRow(); }
 
+    /**
+     * Devuelve la pregunta seleccionada.
+     */
     private IPregunta seleccionada() {
         int r = filaSel();
         return (r < 0) ? null : model.getAt(r);
     }
 
-    /** Calcula el siguiente id entero para Pregunta basado en los existentes (para cualquier tipo con id int). */
+    // -- Auxiliares --
+
+    /**
+     * Calcula el siguiente identificador entero para una nueva pregunta.
+     * Revisa los IDs existentes en cualquier tipo de pregunta.
+     *
+     * @return siguiente número disponible
+     */
     private int siguienteIdPregunta() {
         int max = 0;
         if (evaluacion.getPreguntas() != null) {
             for (IPregunta p : evaluacion.getPreguntas()) {
-                if (p instanceof Pregunta q) {
-                    max = Math.max(max, q.getId());
-                } else if (p instanceof Pareo pr) {
-                    max = Math.max(max, pr.getId());
-                } else if (p instanceof SopaDeLetras sl) {
-                    max = Math.max(max, sl.getId());
-                }
+                if (p instanceof Pregunta q) max = Math.max(max, q.getId());
+                else if (p instanceof Pareo pr) max = Math.max(max, pr.getId());
+                else if (p instanceof SopaDeLetras sl) max = Math.max(max, sl.getId());
             }
         }
         return max + 1;
     }
 
+    // -- Agregar --
+
+    /**
+     * Permite crear una nueva pregunta seleccionando su tipo.
+     */
     private void onAgregar() {
-        // Elegir tipo
         TipoPregunta tipo = (TipoPregunta) JOptionPane.showInputDialog(
                 this, "Tipo de pregunta", "Agregar pregunta",
                 JOptionPane.QUESTION_MESSAGE, null,
@@ -89,38 +131,24 @@ public class EditorPreguntasPanel extends JPanel {
         if (tipo == null) return;
 
         int nuevoId = siguienteIdPregunta();
-
         IPregunta nueva = null;
 
         switch (tipo) {
             case SELECCION_UNICA, SELECCION_MULTIPLE, VERDADERO_FALSO -> {
-                EditorPreguntaSeleccionesDialog dlg =
-                        new EditorPreguntaSeleccionesDialog(
-                                SwingUtilities.getWindowAncestor(this),
-                                null,
-                                tipo,
-                                nuevoId
-                        );
+                EditorPreguntaSeleccionesDialog dlg = new EditorPreguntaSeleccionesDialog(
+                        SwingUtilities.getWindowAncestor(this), null, tipo, nuevoId);
                 dlg.setVisible(true);
                 if (dlg.isGuardado()) nueva = dlg.getPreguntaFinal();
             }
             case PAREO -> {
-                EditorPreguntaPareoDialog dlg =
-                        new EditorPreguntaPareoDialog(
-                                SwingUtilities.getWindowAncestor(this),
-                                null,
-                                nuevoId
-                        );
+                EditorPreguntaPareoDialog dlg = new EditorPreguntaPareoDialog(
+                        SwingUtilities.getWindowAncestor(this), null, nuevoId);
                 dlg.setVisible(true);
                 if (dlg.isGuardado()) nueva = dlg.getPreguntaFinal();
             }
             case SOPA_LETRAS -> {
-                EditorPreguntaSopaDialog dlg =
-                        new EditorPreguntaSopaDialog(
-                                SwingUtilities.getWindowAncestor(this),
-                                null,
-                                nuevoId
-                        );
+                EditorPreguntaSopaDialog dlg = new EditorPreguntaSopaDialog(
+                        SwingUtilities.getWindowAncestor(this), null, nuevoId);
                 dlg.setVisible(true);
                 if (dlg.isGuardado()) nueva = dlg.getPreguntaFinal();
             }
@@ -134,9 +162,17 @@ public class EditorPreguntasPanel extends JPanel {
         }
     }
 
+    // -- Editar --
+
+    /**
+     * Permite editar la pregunta seleccionada según su tipo.
+     */
     private void onEditar() {
         IPregunta p = seleccionada();
-        if (p == null) { JOptionPane.showMessageDialog(this, "Seleccione una pregunta."); return; }
+        if (p == null) {
+            JOptionPane.showMessageDialog(this, "Seleccione una pregunta.");
+            return;
+        }
 
         int row = filaSel();
         IPregunta reemplazo = null;
@@ -147,13 +183,9 @@ public class EditorPreguntasPanel extends JPanel {
                     JOptionPane.showMessageDialog(this, "Tipo inesperado para selección.");
                     return;
                 }
-                EditorPreguntaSeleccionesDialog dlg =
-                        new EditorPreguntaSeleccionesDialog(
-                                SwingUtilities.getWindowAncestor(this),
-                                original,
-                                original.getTipo(),
-                                original.getId()
-                        );
+                EditorPreguntaSeleccionesDialog dlg = new EditorPreguntaSeleccionesDialog(
+                        SwingUtilities.getWindowAncestor(this),
+                        original, original.getTipo(), original.getId());
                 dlg.setVisible(true);
                 if (dlg.isGuardado()) reemplazo = dlg.getPreguntaFinal();
             }
@@ -162,12 +194,8 @@ public class EditorPreguntasPanel extends JPanel {
                     JOptionPane.showMessageDialog(this, "Tipo inesperado para pareo.");
                     return;
                 }
-                EditorPreguntaPareoDialog dlg =
-                        new EditorPreguntaPareoDialog(
-                                SwingUtilities.getWindowAncestor(this),
-                                pr,
-                                pr.getId()
-                        );
+                EditorPreguntaPareoDialog dlg = new EditorPreguntaPareoDialog(
+                        SwingUtilities.getWindowAncestor(this), pr, pr.getId());
                 dlg.setVisible(true);
                 if (dlg.isGuardado()) reemplazo = dlg.getPreguntaFinal();
             }
@@ -176,12 +204,8 @@ public class EditorPreguntasPanel extends JPanel {
                     JOptionPane.showMessageDialog(this, "Tipo inesperado para sopa de letras.");
                     return;
                 }
-                EditorPreguntaSopaDialog dlg =
-                        new EditorPreguntaSopaDialog(
-                                SwingUtilities.getWindowAncestor(this),
-                                sl,
-                                sl.getId()
-                        );
+                EditorPreguntaSopaDialog dlg = new EditorPreguntaSopaDialog(
+                        SwingUtilities.getWindowAncestor(this), sl, sl.getId());
                 dlg.setVisible(true);
                 if (dlg.isGuardado()) reemplazo = dlg.getPreguntaFinal();
             }
@@ -189,7 +213,6 @@ public class EditorPreguntasPanel extends JPanel {
         }
 
         if (reemplazo != null) {
-            // Reemplazar manteniendo la posición
             List<IPregunta> ps = evaluacion.getPreguntas();
             ps.remove(row);
             ps.add(row, reemplazo);
@@ -200,20 +223,38 @@ public class EditorPreguntasPanel extends JPanel {
         }
     }
 
+    // -- Eliminar --
+
+    /**
+     * Elimina la pregunta seleccionada tras confirmación del usuario.
+     */
     private void onEliminar() {
         int r = filaSel();
-        if (r < 0) { JOptionPane.showMessageDialog(this, "Seleccione una pregunta."); return; }
-        int ok = JOptionPane.showConfirmDialog(this, "¿Eliminar la pregunta seleccionada?", "Confirmar", JOptionPane.YES_NO_OPTION);
+        if (r < 0) {
+            JOptionPane.showMessageDialog(this, "Seleccione una pregunta.");
+            return;
+        }
+        int ok = JOptionPane.showConfirmDialog(
+                this, "¿Eliminar la pregunta seleccionada?", "Confirmar", JOptionPane.YES_NO_OPTION);
         if (ok == JOptionPane.YES_OPTION) {
             evaluacion.eliminarPregunta(r);
             recargar();
         }
     }
 
+    // -- Reordenar --
 
+    /**
+     * Mueve la pregunta seleccionada hacia arriba o abajo en la lista.
+     *
+     * @param delta desplazamiento (-1 para subir, +1 para bajar)
+     */
     private void onMover(int delta) {
         int r = filaSel();
-        if (r < 0) { JOptionPane.showMessageDialog(this, "Seleccione una pregunta."); return; }
+        if (r < 0) {
+            JOptionPane.showMessageDialog(this, "Seleccione una pregunta.");
+            return;
+        }
         int n = model.getRowCount();
         int to = r + delta;
         if (to < 0 || to >= n) return;
@@ -223,24 +264,30 @@ public class EditorPreguntasPanel extends JPanel {
         tabla.getSelectionModel().setSelectionInterval(to, to);
     }
 
+    // -- Clases auxiliares --
 
-    // Modelo de tabla
+    /**
+     * Modelo de tabla que representa la lista de preguntas de una evaluación.
+     */
     static class ModeloTabla extends AbstractTableModel {
         private final String[] cols = {"#", "ID", "Tipo", "Descripción", "Puntos", "Detalle"};
         private List<IPregunta> data = new ArrayList<>();
 
+        /** Establece los datos a mostrar. */
         public void setData(List<IPregunta> list) {
             data = list == null ? new ArrayList<>() : list;
             fireTableDataChanged();
         }
 
+        /** Obtiene la pregunta correspondiente a una fila. */
         public IPregunta getAt(int row) { return data.get(row); }
 
         @Override public int getRowCount() { return data.size(); }
         @Override public int getColumnCount() { return cols.length; }
         @Override public String getColumnName(int c) { return cols[c]; }
 
-        @Override public Object getValueAt(int r, int c) {
+        @Override
+        public Object getValueAt(int r, int c) {
             IPregunta p = data.get(r);
             return switch (c) {
                 case 0 -> r + 1;
@@ -258,6 +305,9 @@ public class EditorPreguntasPanel extends JPanel {
             };
         }
 
+        /**
+         * Genera un texto descriptivo según el tipo de pregunta.
+         */
         private String detalle(IPregunta p) {
             if (p instanceof Pregunta q) {
                 return "Opciones: " + (q.getRespuestas() == null ? 0 : q.getRespuestas().size());
@@ -274,5 +324,6 @@ public class EditorPreguntasPanel extends JPanel {
         }
     }
 }
+
 
 

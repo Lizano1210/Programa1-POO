@@ -6,19 +6,54 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Diálogo para crear o editar preguntas de tipo selección:
+ * <ul>
+ *     <li>Selección múltiple</li>
+ *     <li>Selección única</li>
+ *     <li>Verdadero o falso</li>
+ * </ul>
+ * <p>
+ * Si {@code preguntaOriginal == null} → modo creación.<br>
+ * Si {@code preguntaOriginal != null} → modo edición.
+ * </p>
+ */
 public class EditorPreguntaSeleccionesDialog extends JDialog {
 
+    // -- Atributos principales --
+
+    /** Identificador único de la pregunta. */
     private final int idPregunta;
+
+    /** Tipo de pregunta (múltiple, única o VF). */
     private final TipoPregunta tipo;
-    private final Pregunta preguntaOriginal; // puede ser null
-    private Pregunta preguntaResultado;      // nueva instancia reconstruida
+
+    /** Pregunta original (puede ser null si es creación). */
+    private final Pregunta preguntaOriginal;
+
+    /** Pregunta reconstruida al guardar. */
+    private Pregunta preguntaResultado;
+
+    /** Indica si el usuario guardó los cambios. */
     private boolean guardado = false;
+
+    // -- Componentes de interfaz --
 
     private final JTextArea txtDescripcion = new JTextArea(4, 30);
     private final JSpinner spPuntos = new JSpinner(new SpinnerNumberModel(1, 1, 1000, 1));
     private final JTable tabla = new JTable();
     private final ModeloRespuestas model = new ModeloRespuestas();
 
+    // -- Constructor --
+
+    /**
+     * Crea el diálogo para editar o crear una pregunta de selección.
+     *
+     * @param owner ventana propietaria
+     * @param original pregunta existente (null para nueva)
+     * @param tipo tipo de pregunta
+     * @param idPregunta identificador único
+     */
     public EditorPreguntaSeleccionesDialog(Window owner, Pregunta original, TipoPregunta tipo, int idPregunta) {
         super(owner, "Pregunta " + tipo, ModalityType.APPLICATION_MODAL);
         this.preguntaOriginal = original;
@@ -34,6 +69,11 @@ public class EditorPreguntaSeleccionesDialog extends JDialog {
         pack();
     }
 
+    // -- Construcción de interfaz --
+
+    /**
+     * Construye la interfaz gráfica del diálogo.
+     */
     private void construirUI() {
         JPanel root = new JPanel(new BorderLayout(8,8));
         root.setBorder(BorderFactory.createEmptyBorder(12,12,12,12));
@@ -50,7 +90,9 @@ public class EditorPreguntaSeleccionesDialog extends JDialog {
         c.gridwidth=1;
 
         c.gridx=0; c.gridy=1; form.add(new JLabel("Descripción"), c);
-        c.gridx=1; c.gridy=1; txtDescripcion.setLineWrap(true); txtInstruccionesWrap();
+        c.gridx=1; c.gridy=1;
+        txtDescripcion.setLineWrap(true);
+        txtDescripcion.setWrapStyleWord(true);
         form.add(new JScrollPane(txtDescripcion), c);
 
         c.gridx=0; c.gridy=2; form.add(new JLabel("Puntos"), c);
@@ -75,6 +117,7 @@ public class EditorPreguntaSeleccionesDialog extends JDialog {
         actions.add(btnCancelar);
         root.add(actions, BorderLayout.SOUTH);
 
+        // -- Eventos --
         btnAdd.addActionListener(e -> addOpcion());
         btnEdit.addActionListener(e -> editOpcion());
         btnDel.addActionListener(e -> delOpcion());
@@ -82,10 +125,12 @@ public class EditorPreguntaSeleccionesDialog extends JDialog {
         btnCancelar.addActionListener(e -> dispose());
     }
 
-    private void txtInstruccionesWrap() {
-        txtDescripcion.setWrapStyleWord(true);
-    }
+    // -- Carga de datos --
 
+    /**
+     * Carga los datos de la pregunta si se está en modo edición.
+     * Si es tipo VF y es nueva, precarga dos opciones básicas.
+     */
     private void cargar() {
         model.setData(new ArrayList<>());
         if (preguntaOriginal != null) {
@@ -93,13 +138,12 @@ public class EditorPreguntaSeleccionesDialog extends JDialog {
             spPuntos.setValue(preguntaOriginal.obtenerPuntos());
             if (preguntaOriginal.getRespuestas() != null) {
                 for (Respuesta r : preguntaOriginal.getRespuestas()) {
-                    // clonamos a modelo editable
                     model.data.add(new Respuesta(r.getTexto(), r.isCorrecta(), r.getOrden()));
                 }
                 model.fireTableDataChanged();
             }
         } else {
-            // Defaults para VF (2 opciones)
+            // precarga automática para Verdadero/Falso
             if (tipo == TipoPregunta.VERDADERO_FALSO) {
                 model.data.add(new Respuesta("Verdadero", false, 1));
                 model.data.add(new Respuesta("Falso", false, 2));
@@ -108,6 +152,11 @@ public class EditorPreguntaSeleccionesDialog extends JDialog {
         }
     }
 
+    // -- Gestión de opciones --
+
+    /**
+     * Agrega una nueva opción de respuesta.
+     */
     private void addOpcion() {
         String texto = JOptionPane.showInputDialog(this, "Texto de la opción:");
         if (texto == null || texto.trim().isEmpty()) return;
@@ -120,6 +169,9 @@ public class EditorPreguntaSeleccionesDialog extends JDialog {
         model.fireTableDataChanged();
     }
 
+    /**
+     * Edita la opción seleccionada en la tabla.
+     */
     private void editOpcion() {
         int r = tabla.getSelectedRow();
         if (r < 0) { JOptionPane.showMessageDialog(this, "Seleccione una opción."); return; }
@@ -133,37 +185,40 @@ public class EditorPreguntaSeleccionesDialog extends JDialog {
 
         op.setTexto(texto.trim());
         op.setCorrecta(correcta);
-        // mantener orden estable (no cambiamos aquí)
         model.fireTableRowsUpdated(r, r);
     }
 
+    /**
+     * Elimina la opción seleccionada de la tabla.
+     */
     private void delOpcion() {
         int r = tabla.getSelectedRow();
         if (r < 0) { JOptionPane.showMessageDialog(this, "Seleccione una opción."); return; }
         model.data.remove(r);
-        // reordenar consecutivo
         for (int i = 0; i < model.data.size(); i++) {
             model.data.get(i).setOrden(i+1);
         }
         model.fireTableDataChanged();
     }
 
+    // -- Guardado --
+
+    /**
+     * Guarda la pregunta con las opciones configuradas.
+     * Crea una nueva instancia de {@link Pregunta} con el mismo ID.
+     */
     private void onGuardar() {
         try {
             String desc = txtDescripcion.getText().trim();
             int puntos = (Integer) spPuntos.getValue();
 
-            // Reconstruir nueva Pregunta con este id
             Pregunta nueva = new Pregunta(idPregunta, tipo, desc, puntos);
 
-            // Cargar respuestas (con orden consecutivo)
             for (int i = 0; i < model.data.size(); i++) {
                 Respuesta r = model.data.get(i);
-                // asegurar orden i+1
                 nueva.agregarRespuesta(new Respuesta(r.getTexto(), r.isCorrecta(), i+1));
             }
 
-            // Validación de tu modelo
             if (!nueva.validarDatos()) {
                 JOptionPane.showMessageDialog(this, "Datos inválidos para el tipo seleccionado.");
                 return;
@@ -178,21 +233,31 @@ public class EditorPreguntaSeleccionesDialog extends JDialog {
         }
     }
 
+    // -- Getters --
+
+    /** @return true si el usuario guardó los cambios. */
     public boolean isGuardado() { return guardado; }
 
-    /** Nueva instancia de Pregunta (con mismo id si venías a editar) para insertar/reemplazar. */
+    /** @return nueva instancia de {@link Pregunta} lista para insertar o reemplazar. */
     public Pregunta getPreguntaFinal() { return preguntaResultado; }
 
-    // ===== modelo tabla respuestas =====
+    // -- Clases auxiliares --
+
+    /**
+     * Modelo de tabla para representar las opciones de respuesta.
+     * Muestra el número, el texto y si es correcta.
+     */
     static class ModeloRespuestas extends AbstractTableModel {
         private final String[] cols = {"#", "Texto", "Correcta"};
         List<Respuesta> data = new ArrayList<>();
 
+        /** Actualiza los datos de la tabla. */
         public void setData(List<Respuesta> list) { data = list; fireTableDataChanged(); }
 
         @Override public int getRowCount() { return data.size(); }
         @Override public int getColumnCount() { return cols.length; }
         @Override public String getColumnName(int c) { return cols[c]; }
+
         @Override public Object getValueAt(int r, int c) {
             Respuesta x = data.get(r);
             return switch (c) {
@@ -204,3 +269,4 @@ public class EditorPreguntaSeleccionesDialog extends JDialog {
         }
     }
 }
+

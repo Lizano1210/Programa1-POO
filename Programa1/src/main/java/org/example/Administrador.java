@@ -4,19 +4,33 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Clase Administrador
- * Hereda de Usuario y tiene permisos para gestionar todo el sistema.
+ * Representa a un administrador del sistema.
+ * Hereda de {@link Usuario} y puede gestionar estudiantes, profesores y cursos.
  */
 public class Administrador extends Usuario {
-    // Atributos
-    private int nivelAcceso;  // 1=básico, 2=intermedio, 3=completo
 
-    // Listas del sistema (normalmente estarían en una clase Sistema o Main)
+    // -- Atributos --
+    /** Nivel de acceso del administrador: 1=básico, 2=intermedio, 3=completo. */
+    private int nivelAcceso;
+
+    // -- Listas del sistema (en una app real vivirían en una capa de servicio) --
     private static List<Estudiante> listaEstudiantes = new ArrayList<>();
     private static List<Profesor> listaProfesores = new ArrayList<>();
     private static List<Curso> listaCursos = new ArrayList<>();
 
-    // Constructor
+    // -- Constructor --
+    /**
+     * Crea un administrador con sus datos personales y nivel de acceso.
+     *
+     * @param nombre    nombre
+     * @param apellido1 primer apellido
+     * @param apellido2 segundo apellido
+     * @param id        identificador único
+     * @param telefono  teléfono de contacto
+     * @param correo    correo electrónico
+     * @param direccion dirección
+     * @param nivelAcceso nivel de acceso (1 a 3)
+     */
     public Administrador(String nombre, String apellido1, String apellido2,
                          String id, String telefono, String correo, String direccion,
                          int nivelAcceso) {
@@ -24,11 +38,22 @@ public class Administrador extends Usuario {
         this.nivelAcceso = nivelAcceso;
     }
 
-    // Getters y Setters
+    // -- Getters y Setters --
+    /**
+     * Obtiene el nivel de acceso del administrador.
+     *
+     * @return nivel de acceso (1-3)
+     */
     public int getNivelAcceso() {
         return nivelAcceso;
     }
 
+    /**
+     * Establece el nivel de acceso del administrador.
+     *
+     * @param nivelAcceso nuevo nivel (1-3)
+     * @throws IllegalArgumentException si el nivel está fuera de 1-3
+     */
     public void setNivelAcceso(int nivelAcceso) {
         if (nivelAcceso < 1 || nivelAcceso > 3) {
             throw new IllegalArgumentException("Nivel de acceso debe ser entre 1 y 3");
@@ -36,10 +61,14 @@ public class Administrador extends Usuario {
         this.nivelAcceso = nivelAcceso;
     }
 
-     
-    // GESTIÓN DE ESTUDIANTES
-     
+    // -- Gestión de estudiantes --
 
+    /**
+     * Registra un estudiante, validando datos y evitando IDs duplicados.
+     *
+     * @param estudiante estudiante a registrar
+     * @return {@code true} si se registró; {@code false} en caso contrario
+     */
     public boolean registrarEstudiante(Estudiante estudiante) {
         if (estudiante == null) {
             System.out.println("Error: El estudiante no puede ser null");
@@ -51,7 +80,6 @@ public class Administrador extends Usuario {
             return false;
         }
 
-        // Verificar que no exista un estudiante con el mismo ID
         for (Estudiante e : listaEstudiantes) {
             if (e.getIdUsuario().equals(estudiante.getIdUsuario())) {
                 System.out.println("Error: Ya existe un estudiante con ID " + estudiante.getIdUsuario());
@@ -64,6 +92,12 @@ public class Administrador extends Usuario {
         return true;
     }
 
+    /**
+     * Modifica los datos de un estudiante ya existente.
+     *
+     * @param estudianteModificado datos actualizados
+     * @return {@code true} si se modificó; {@code false} si no existe o no es válido
+     */
     public boolean modificarEstudiante(Estudiante estudianteModificado) {
         if (estudianteModificado == null) {
             System.out.println("Error: El estudiante no puede ser null");
@@ -81,15 +115,19 @@ public class Administrador extends Usuario {
             return false;
         }
 
-        // Reemplazar en la lista
         int index = listaEstudiantes.indexOf(estudianteExistente);
         listaEstudiantes.set(index, estudianteModificado);
 
         System.out.println("Estudiante modificado exitosamente: " + estudianteModificado.obtenerNombreCompleto());
-        
         return true;
     }
 
+    /**
+     * Elimina un estudiante por su ID.
+     *
+     * @param idEstudiante ID del estudiante
+     * @return {@code true} si se eliminó; {@code false} si no existe
+     */
     public boolean eliminarEstudiante(String idEstudiante) {
         Estudiante estudiante = buscarEstudiante(idEstudiante);
 
@@ -100,10 +138,15 @@ public class Administrador extends Usuario {
 
         listaEstudiantes.remove(estudiante);
         System.out.println("Estudiante eliminado exitosamente: " + estudiante.obtenerNombreCompleto());
-        
         return true;
     }
 
+    /**
+     * Busca un estudiante por ID.
+     *
+     * @param id ID del estudiante
+     * @return el estudiante o {@code null} si no existe
+     */
     private Estudiante buscarEstudiante(String id) {
         for (Estudiante e : listaEstudiantes) {
             if (e.getIdUsuario().equals(id)) {
@@ -113,10 +156,14 @@ public class Administrador extends Usuario {
         return null;
     }
 
-     
-    // GESTIÓN DE PROFESORES
-     
+    // -- Gestión de profesores --
 
+    /**
+     * Registra un profesor, validando datos y evitando IDs duplicados.
+     *
+     * @param profesor profesor a registrar
+     * @return {@code true} si se registró; {@code false} en caso contrario
+     */
     public boolean registrarProfesor(Profesor profesor) {
         if (profesor == null) {
             System.out.println("Error: El profesor no puede ser null");
@@ -128,7 +175,6 @@ public class Administrador extends Usuario {
             return false;
         }
 
-        // Verificar que no exista un profesor con el mismo ID
         for (Profesor p : listaProfesores) {
             if (p.getIdUsuario().equals(profesor.getIdUsuario())) {
                 System.out.println("Error: Ya existe un profesor con ID " + profesor.getIdUsuario());
@@ -138,10 +184,15 @@ public class Administrador extends Usuario {
 
         listaProfesores.add(profesor);
         System.out.println("Profesor registrado exitosamente: " + profesor.obtenerNombreCompleto());
-
         return true;
     }
 
+    /**
+     * Modifica los datos de un profesor existente.
+     *
+     * @param profesorModificado datos actualizados
+     * @return {@code true} si se modificó; {@code false} si no existe o no es válido
+     */
     public boolean modificarProfesor(Profesor profesorModificado) {
         if (profesorModificado == null) {
             System.out.println("Error: El profesor no puede ser null");
@@ -159,15 +210,19 @@ public class Administrador extends Usuario {
             return false;
         }
 
-        // Reemplazar en la lista
         int index = listaProfesores.indexOf(profesorExistente);
         listaProfesores.set(index, profesorModificado);
 
         System.out.println("Profesor modificado exitosamente: " + profesorModificado.obtenerNombreCompleto());
-
         return true;
     }
 
+    /**
+     * Elimina un profesor por su ID.
+     *
+     * @param idProfesor ID del profesor
+     * @return {@code true} si se eliminó; {@code false} si no existe
+     */
     public boolean eliminarProfesor(String idProfesor) {
         Profesor profesor = buscarProfesor(idProfesor);
 
@@ -178,10 +233,15 @@ public class Administrador extends Usuario {
 
         listaProfesores.remove(profesor);
         System.out.println("Profesor eliminado exitosamente: " + profesor.obtenerNombreCompleto());
-
         return true;
     }
 
+    /**
+     * Busca un profesor por ID.
+     *
+     * @param id ID del profesor
+     * @return el profesor o {@code null} si no existe
+     */
     private Profesor buscarProfesor(String id) {
         for (Profesor p : listaProfesores) {
             if (p.getIdUsuario().equals(id)) {
@@ -191,10 +251,14 @@ public class Administrador extends Usuario {
         return null;
     }
 
-     
-    // GESTIÓN DE CURSOS
-     
+    // -- Gestión de cursos --
 
+    /**
+     * Crea un curso, validando datos y evitando IDs duplicados.
+     *
+     * @param curso curso a crear
+     * @return {@code true} si se creó; {@code false} en caso contrario
+     */
     public boolean crearCurso(Curso curso) {
         if (curso == null) {
             System.out.println("Error: El curso no puede ser null");
@@ -206,7 +270,6 @@ public class Administrador extends Usuario {
             return false;
         }
 
-        // Verificar que no exista un curso con el mismo ID
         for (Curso c : listaCursos) {
             if (c.getId().equals(curso.getId())) {
                 System.out.println("Error: Ya existe un curso con ID " + curso.getId());
@@ -219,6 +282,12 @@ public class Administrador extends Usuario {
         return true;
     }
 
+    /**
+     * Modifica un curso existente.
+     *
+     * @param cursoModificado datos actualizados
+     * @return {@code true} si se modificó; {@code false} si no existe o no es válido
+     */
     public boolean modificarCurso(Curso cursoModificado) {
         if (cursoModificado == null) {
             System.out.println("Error: El curso no puede ser null");
@@ -236,7 +305,6 @@ public class Administrador extends Usuario {
             return false;
         }
 
-        // Reemplazar en la lista
         int index = listaCursos.indexOf(cursoExistente);
         listaCursos.set(index, cursoModificado);
 
@@ -244,6 +312,12 @@ public class Administrador extends Usuario {
         return true;
     }
 
+    /**
+     * Elimina un curso por ID, siempre que no tenga grupos vigentes.
+     *
+     * @param idCurso ID del curso
+     * @return {@code true} si se eliminó; {@code false} si no existe o tiene grupos vigentes
+     */
     public boolean eliminarCurso(String idCurso) {
         Curso curso = buscarCurso(idCurso);
 
@@ -252,7 +326,6 @@ public class Administrador extends Usuario {
             return false;
         }
 
-        // Verificar que no tenga grupos vigentes
         for (Grupo g : curso.grupos) {
             if (g.esVigenteHoy()) {
                 System.out.println("Error: No se puede eliminar el curso porque tiene grupos vigentes");
@@ -265,6 +338,12 @@ public class Administrador extends Usuario {
         return true;
     }
 
+    /**
+     * Busca un curso por su ID.
+     *
+     * @param id ID del curso
+     * @return curso encontrado o {@code null}
+     */
     private Curso buscarCurso(String id) {
         for (Curso c : listaCursos) {
             if (c.getId().equals(id)) {
@@ -274,10 +353,12 @@ public class Administrador extends Usuario {
         return null;
     }
 
-     
-    // REPORTES
-     
+    // -- Reportes --
 
+    /**
+     * Imprime un reporte general del sistema en consola.
+     * Muestra conteos de entidades y resumen de cursos y grupos.
+     */
     public void generarReporte() {
         System.out.println("\n╔════════════════════════════════════════════════╗");
         System.out.println("║         REPORTE DEL SISTEMA ACADÉMICO          ║");
@@ -317,24 +398,30 @@ public class Administrador extends Usuario {
         System.out.println();
     }
 
-    // Métodos de acceso a listas (para usar desde otras clases)
-    public static List<Estudiante> getListaEstudiantes() {
-        return listaEstudiantes;
-    }
+    // -- Acceso a listas (para otras clases) --
+    /** @return lista global de estudiantes. */
+    public static List<Estudiante> getListaEstudiantes() { return listaEstudiantes; }
+    /** @return lista global de profesores. */
+    public static List<Profesor> getListaProfesores() { return listaProfesores; }
+    /** @return lista global de cursos. */
+    public static List<Curso> getListaCursos() { return listaCursos; }
 
-    public static List<Profesor> getListaProfesores() {
-        return listaProfesores;
-    }
-
-    public static List<Curso> getListaCursos() {
-        return listaCursos;
-    }
-
+    // -- Validaciones y utilidades --
+    /**
+     * Valida los datos del administrador (incluye rango de nivel de acceso).
+     *
+     * @return {@code true} si los datos son válidos
+     */
     @Override
     public boolean validarDatos() {
         return super.validarDatos() && nivelAcceso >= 1 && nivelAcceso <= 3;
     }
 
+    /**
+     * Representación de texto del administrador.
+     *
+     * @return cadena con datos y nivel de acceso
+     */
     @Override
     public String toString() {
         return String.format(
@@ -347,6 +434,11 @@ public class Administrador extends Usuario {
         );
     }
 
+    /**
+     * Obtiene el nombre legible del nivel de acceso.
+     *
+     * @return texto del nivel
+     */
     private String obtenerNombreNivelAcceso() {
         switch (nivelAcceso) {
             case 1: return "Básico";
@@ -358,32 +450,33 @@ public class Administrador extends Usuario {
 }
 
 
- 
-// CLASE GESTORA PARA ADMINISTRADOR POR DEFECTO
- 
+// -- Clase gestora para administrador por defecto --
 
 /**
- * Clase que gestiona el administrador por defecto del sistema.
- * Usa el patrón Singleton para asegurar un único administrador inicial.
+ * Gestiona el administrador por defecto del sistema.
+ * Implementa un enfoque de tipo Singleton para asegurar una única instancia.
  */
 class GestorAdministrador {
+
+    /** Referencia al administrador por defecto (único). */
     private static Administrador adminPorDefecto = null;
 
     /**
-     * Crea y retorna el administrador por defecto del sistema.
-     * Si ya existe, retorna el mismo.
+     * Obtiene el administrador por defecto; si no existe, lo crea.
+     *
+     * @return administrador por defecto
      */
     public static Administrador obtenerAdminPorDefecto() {
         if (adminPorDefecto == null) {
             adminPorDefecto = new Administrador(
-                    "Admin",           // nombre
-                    "Sistema",         // apellido1
-                    "Principal",       // apellido2
-                    "ADMIN001",        // id
-                    "88888888",        // telefono
-                    "admin@sistema.edu", // correo
-                    "Oficina Central",   // direccion
-                    3                   // nivel de acceso completo
+                    "Admin",
+                    "Sistema",
+                    "Principal",
+                    "ADMIN001",
+                    "88888888",
+                    "admin@sistema.edu",
+                    "Oficina Central",
+                    3
             );
 
             System.out.println("✓ Administrador por defecto creado exitosamente");
@@ -395,19 +488,24 @@ class GestorAdministrador {
     }
 
     /**
-     * Verifica si las credenciales corresponden al administrador por defecto.
+     * Valida credenciales contra el administrador por defecto.
+     * En un sistema real, esto se integraría con la gestión de contraseñas.
+     *
+     * @param id         identificador
+     * @param contrasena contraseña
+     * @return {@code true} si coinciden con las credenciales por defecto
      */
     public static boolean validarCredencialesAdmin(String id, String contrasena) {
         if (adminPorDefecto == null) {
             obtenerAdminPorDefecto();
         }
-
-        // En un sistema real, verificarías con la clase Contraseña
         return id.equals("ADMIN001") && contrasena.equals("admin123");
     }
 
     /**
-     * Permite cambiar el administrador por defecto (útil si se elimina).
+     * Establece una nueva instancia como administrador por defecto.
+     *
+     * @param admin administrador a fijar como predeterminado
      */
     public static void establecerAdminPorDefecto(Administrador admin) {
         adminPorDefecto = admin;

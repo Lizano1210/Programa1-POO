@@ -1,21 +1,46 @@
 package org.example;
+
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Clase Profesor
- * Hereda de Usuario y agrega información específica de profesores.
- * Gestiona los grupos que imparte y las evaluaciones que crea.
+ * Representa un profesor dentro del sistema académico.
+ * <p>
+ * Hereda de {@link Usuario} e incluye información adicional como títulos,
+ * certificaciones, grupos que imparte y evaluaciones creadas.
+ * También permite crear y administrar evaluaciones y grupos.
+ * </p>
  */
 public class Profesor extends Usuario {
-    // Atributos específicos
-    private List<String> tituOb;  // Títulos obtenidos
-    private List<String> certEs;  // Certificaciones de estudios
-    private List<Grupo> grupos;   // Grupos que imparte
-    private List<Evaluacion> evaluaciones;  // Evaluaciones creadas
 
-    // Constructor
+    // -- Atributos --
+
+    /** Títulos obtenidos por el profesor. */
+    private List<String> tituOb;
+
+    /** Certificaciones de estudio del profesor. */
+    private List<String> certEs;
+
+    /** Grupos asignados al profesor. */
+    private List<Grupo> grupos;
+
+    /** Evaluaciones creadas por el profesor. */
+    private List<Evaluacion> evaluaciones;
+
+    // -- Constructores --
+
+    /**
+     * Crea un nuevo profesor con información básica.
+     *
+     * @param nombre nombre del profesor
+     * @param apellido1 primer apellido
+     * @param apellido2 segundo apellido
+     * @param id identificador único del profesor
+     * @param telefono número de teléfono
+     * @param correo correo electrónico
+     * @param direccion dirección del profesor
+     */
     public Profesor(String nombre, String apellido1, String apellido2,
                     String id, String telefono, String correo, String direccion) {
         super(nombre, apellido1, apellido2, id, telefono, correo, direccion);
@@ -25,7 +50,19 @@ public class Profesor extends Usuario {
         this.evaluaciones = new ArrayList<>();
     }
 
-    // Constructor con títulos y certificaciones
+    /**
+     * Crea un nuevo profesor incluyendo títulos y certificaciones.
+     *
+     * @param nombre nombre del profesor
+     * @param apellido1 primer apellido
+     * @param apellido2 segundo apellido
+     * @param id identificador único
+     * @param telefono teléfono de contacto
+     * @param correo correo electrónico
+     * @param direccion dirección física
+     * @param tituOb lista de títulos obtenidos
+     * @param certEs lista de certificaciones
+     */
     public Profesor(String nombre, String apellido1, String apellido2,
                     String id, String telefono, String correo, String direccion,
                     List<String> tituOb, List<String> certEs) {
@@ -36,28 +73,20 @@ public class Profesor extends Usuario {
         this.evaluaciones = new ArrayList<>();
     }
 
-    // Getters
-    public List<String> getTituOb() {
-        return tituOb;
-    }
+    // -- Getters y Setters --
 
-    public List<String> getCertEs() {
-        return certEs;
-    }
+    public List<String> getTituOb() { return tituOb; }
 
-    public List<Grupo> getGrupos() {
-        return grupos;
-    }
+    public List<String> getCertEs() { return certEs; }
 
-    public  void  setGrupos(ArrayList<Grupo> nGrupos) { this.grupos = nGrupos;}
+    public List<Grupo> getGrupos() { return grupos; }
 
-    public List<Evaluacion> getEvaluaciones() {
-        return evaluaciones;
-    }
+    public void setGrupos(ArrayList<Grupo> nGrupos) { this.grupos = nGrupos; }
 
-    public void setEvaluaciones(ArrayList<Evaluacion> nuevasEval) {this.evaluaciones = nuevasEval;}
+    public List<Evaluacion> getEvaluaciones() { return evaluaciones; }
 
-    // Setters
+    public void setEvaluaciones(ArrayList<Evaluacion> nuevasEval) { this.evaluaciones = nuevasEval; }
+
     public void setTituOb(List<String> tituOb) {
         if (!validarTitulos(tituOb)) {
             throw new IllegalArgumentException("Títulos inválidos: cada uno debe tener entre 5 y 40 caracteres");
@@ -72,58 +101,59 @@ public class Profesor extends Usuario {
         this.certEs = certEs;
     }
 
-    // Métodos para gestionar títulos
+    // -- Gestión de títulos y certificaciones --
+
+    /** Agrega un nuevo título al profesor. */
     public void agregarTitulo(String titulo) {
-        if (titulo == null || titulo.length() < 5 || titulo.length() > 40) {
+        if (titulo == null || titulo.length() < 5 || titulo.length() > 40)
             throw new IllegalArgumentException("Título inválido: debe tener entre 5 y 40 caracteres");
-        }
         tituOb.add(titulo);
     }
 
+    /** Elimina un título existente. */
     public boolean removerTitulo(String titulo) {
         return tituOb.remove(titulo);
     }
 
-    // Métodos para gestionar certificaciones
+    /** Agrega una nueva certificación al profesor. */
     public void agregarCertificacion(String certificacion) {
-        if (certificacion == null || certificacion.length() < 5 || certificacion.length() > 40) {
+        if (certificacion == null || certificacion.length() < 5 || certificacion.length() > 40)
             throw new IllegalArgumentException("Certificación inválida: debe tener entre 5 y 40 caracteres");
-        }
         certEs.add(certificacion);
     }
 
+    /** Elimina una certificación existente. */
     public boolean removerCertificacion(String certificacion) {
         return certEs.remove(certificacion);
     }
 
-    // Métodos principales
+    // -- Gestión de grupos --
 
     /**
-     * Asigna un grupo al profesor.
-     * El profesor también se asigna al grupo automáticamente.
+     * Asigna un grupo al profesor y establece la relación bidireccional.
+     *
+     * @param grupo grupo a asignar
      */
     public void asignarGrupo(Grupo grupo) {
-        if (grupo == null) {
-            throw new IllegalArgumentException("El grupo no puede ser null");
-        }
-
+        if (grupo == null) throw new IllegalArgumentException("El grupo no puede ser null");
         if (grupos.contains(grupo)) {
             System.out.println("El profesor ya tiene asignado este grupo");
             return;
         }
 
         grupos.add(grupo);
-        grupo.setProfesor(this);  // Asigna el profesor al grupo también
+        grupo.setProfesor(this);
         System.out.println("Grupo #" + grupo.getIdGrupo() + " asignado exitosamente al profesor");
     }
 
     /**
-     * Desasigna un grupo del profesor.
+     * Desasigna un grupo del profesor, eliminando la referencia mutua.
+     *
+     * @param grupo grupo a desasignar
+     * @return {@code true} si la operación fue exitosa
      */
     public boolean desasignarGrupo(Grupo grupo) {
-        if (grupo == null) {
-            throw new IllegalArgumentException("El grupo no puede ser null");
-        }
+        if (grupo == null) throw new IllegalArgumentException("El grupo no puede ser null");
 
         if (!grupos.contains(grupo)) {
             System.out.println("El profesor no tiene asignado este grupo");
@@ -131,36 +161,40 @@ public class Profesor extends Usuario {
         }
 
         grupos.remove(grupo);
-        if (grupo.getProfesor() == this) {
-            grupo.setProfesor(null);  // Remueve el profesor del grupo
-        }
+        if (grupo.getProfesor() == this) grupo.setProfesor(null);
         System.out.println("Grupo #" + grupo.getIdGrupo() + " desasignado exitosamente");
         return true;
     }
 
+    // -- Gestión de evaluaciones --
+
     /**
-     * Crea una nueva evaluación.
-     * Por ahora retorna null hasta que la clase Evaluacion esté implementada.
+     * Crea una nueva evaluación y la asocia al profesor.
+     *
+     * @param nombre nombre de la evaluación
+     * @param instrucciones instrucciones de la evaluación
+     * @param objetivos lista de objetivos de aprendizaje
+     * @param duracionMinutos duración en minutos
+     * @param preguntasAleatorias si las preguntas se mostrarán en orden aleatorio
+     * @param opcionesAleatorias si las opciones dentro de las preguntas se mezclarán
+     * @return evaluación creada
      */
     public Evaluacion crearEvaluacion(String nombre, String instrucciones,
                                       List<String> objetivos, int duracionMinutos,
                                       boolean preguntasAleatorias, boolean opcionesAleatorias) {
-
-        Evaluacion nuevaEvaluacion = new Evaluacion(nombre, instrucciones, objetivos,
-                                                     duracionMinutos, preguntasAleatorias,
-                                                     opcionesAleatorias);
+        Evaluacion nuevaEvaluacion = new Evaluacion(
+                nombre, instrucciones, objetivos, duracionMinutos,
+                preguntasAleatorias, opcionesAleatorias
+        );
         evaluaciones.add(nuevaEvaluacion);
         System.out.println("Evaluación creada exitosamente: " + nombre);
         return nuevaEvaluacion;
     }
 
-    /**
-     * Agrega una evaluación ya creada a la lista del profesor.
-     */
+    /** Agrega una evaluación ya existente a la lista del profesor. */
     public void agregarEvaluacion(Evaluacion evaluacion) {
-        if (evaluacion == null) {
+        if (evaluacion == null)
             throw new IllegalArgumentException("La evaluación no puede ser null");
-        }
 
         if (!evaluaciones.contains(evaluacion)) {
             evaluaciones.add(evaluacion);
@@ -168,48 +202,31 @@ public class Profesor extends Usuario {
         }
     }
 
-    /**
-     * Obtiene todas las evaluaciones asociadas a un grupo específico.
-     */
+    /** Obtiene las evaluaciones creadas por el profesor en un grupo específico. */
     public List<Evaluacion> obtenerEvaluacionesPorGrupo(Grupo grupo) {
-        if (grupo == null) {
-            throw new IllegalArgumentException("El grupo no puede ser null");
-        }
+        if (grupo == null) throw new IllegalArgumentException("El grupo no puede ser null");
 
         List<Evaluacion> evaluacionesDelGrupo = new ArrayList<>();
-
-
         for (EvaluacionAsignada ea : grupo.getEvaluacionesAsignadas()) {
-            if (evaluaciones.contains(ea.getEvaluacion())) {
-                evaluacionesDelGrupo.add(ea.getEvaluacion());
-            }
+            if (evaluaciones.contains(ea.getEvaluacion())) evaluacionesDelGrupo.add(ea.getEvaluacion());
         }
         return evaluacionesDelGrupo;
     }
 
-    /**
-     * Obtiene la cantidad de grupos que imparte el profesor.
-     */
-    public int obtenerCantidadGrupos() {
-        return grupos.size();
-    }
+    // -- Consultas --
 
-    /**
-     * Obtiene la cantidad de evaluaciones creadas.
-     */
-    public int obtenerCantidadEvaluaciones() {
-        return evaluaciones.size();
-    }
+    /** Devuelve la cantidad total de grupos asignados al profesor. */
+    public int obtenerCantidadGrupos() { return grupos.size(); }
 
-    /**
-     * Muestra todos los grupos del profesor.
-     */
+    /** Devuelve la cantidad de evaluaciones creadas. */
+    public int obtenerCantidadEvaluaciones() { return evaluaciones.size(); }
+
+    /** Muestra en consola todos los grupos asignados al profesor. */
     public void mostrarGrupos() {
         if (grupos.isEmpty()) {
             System.out.println("El profesor no tiene grupos asignados");
             return;
         }
-
         System.out.println("\n===== GRUPOS DEL PROFESOR: " + obtenerNombreCompleto() + " =====\n");
         for (Grupo grupo : grupos) {
             System.out.println(grupo);
@@ -217,15 +234,12 @@ public class Profesor extends Usuario {
         }
     }
 
-    /**
-     * Muestra todas las evaluaciones del profesor.
-     */
+    /** Muestra en consola todas las evaluaciones creadas por el profesor. */
     public void mostrarEvaluaciones() {
         if (evaluaciones.isEmpty()) {
             System.out.println("El profesor no ha creado evaluaciones");
             return;
         }
-
         System.out.println("\n===== EVALUACIONES DEL PROFESOR: " + obtenerNombreCompleto() + " =====\n");
         for (Evaluacion eval : evaluaciones) {
             System.out.println(eval);
@@ -233,26 +247,19 @@ public class Profesor extends Usuario {
         }
     }
 
-    // Validaciones privadas
+    // -- Validaciones internas --
+
     private boolean validarTitulos(List<String> titulos) {
         if (titulos == null) return false;
-
-        for (String titulo : titulos) {
-            if (titulo == null || titulo.length() < 5 || titulo.length() > 40) {
-                return false;
-            }
-        }
+        for (String titulo : titulos)
+            if (titulo == null || titulo.length() < 5 || titulo.length() > 40) return false;
         return true;
     }
 
     private boolean validarCertificaciones(List<String> certificaciones) {
         if (certificaciones == null) return false;
-
-        for (String cert : certificaciones) {
-            if (cert == null || cert.length() < 5 || cert.length() > 40) {
-                return false;
-            }
-        }
+        for (String cert : certificaciones)
+            if (cert == null || cert.length() < 5 || cert.length() > 40) return false;
         return true;
     }
 
@@ -263,38 +270,25 @@ public class Profesor extends Usuario {
                 && validarCertificaciones(certEs);
     }
 
-    // toString
+    // -- Representación --
+
     @Override
     public String toString() {
         return String.format(
-                "===== PROFESOR =====\n" +
-                        "%s\n" +  // Datos de Usuario (usando super.toString())
-                        "Títulos obtenidos: %d\n" +
-                        "%s" +
-                        "Certificaciones: %d\n" +
-                        "%s" +
-                        "Grupos asignados: %d\n" +
-                        "Evaluaciones creadas: %d",
+                "===== PROFESOR =====\n%s\nTítulos obtenidos: %d\n%sCertificaciones: %d\n%sGrupos asignados: %d\nEvaluaciones creadas: %d",
                 super.toString(),
-                tituOb.size(),
-                mostrarListaConIndentacion(tituOb, "  - "),
-                certEs.size(),
-                mostrarListaConIndentacion(certEs, "  - "),
+                tituOb.size(), mostrarListaConIndentacion(tituOb, "  - "),
+                certEs.size(), mostrarListaConIndentacion(certEs, "  - "),
                 grupos.size(),
                 evaluaciones.size()
         );
     }
 
-    // Métodito auxiliar para que se vean bien bonitas las listas
+    /** Formatea una lista con indentación para visualización. */
     private String mostrarListaConIndentacion(List<String> lista, String prefijo) {
-        if (lista.isEmpty()) {
-            return prefijo + "(ninguno)\n";
-        }
-
+        if (lista.isEmpty()) return prefijo + "(ninguno)\n";
         StringBuilder sb = new StringBuilder();
-        for (String item : lista) {
-            sb.append(prefijo).append(item).append("\n");
-        }
+        for (String item : lista) sb.append(prefijo).append(item).append("\n");
         return sb.toString();
     }
 }

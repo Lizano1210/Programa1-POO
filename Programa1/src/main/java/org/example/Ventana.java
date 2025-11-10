@@ -4,28 +4,48 @@ import javax.swing.*;
 import java.awt.*;
 
 /**
- * Ventana principal con CardLayout para alternar vistas (LOGIN/ROL).
- * Crea menú y orquesta navegación básica.
+ * Ventana principal del sistema de matrícula y calificaciones.
+ * <p>
+ * Utiliza un {@link CardLayout} para alternar entre diferentes vistas o paneles
+ * de usuario según su rol: administrador, profesor o estudiante.
+ * </p>
+ * <p>
+ * Además, gestiona la autenticación, la inicialización de servicios, la carga
+ * de datos de demostración y la creación del menú principal de la aplicación.
+ * </p>
  */
 public class Ventana extends JFrame {
 
+    // -- Atributos principales --
+
+    /** Contenedor principal con diseño por tarjetas (vistas intercambiables). */
     private final JPanel mainContainer = new JPanel(new CardLayout());
+
+    /** Servicio de autenticación global del sistema. */
     private final Autenticacion auth = new Autenticacion();
 
+    /** Servicios principales del sistema. */
     private UsuarioServiceMem usuarioService;
     private CursoService cursoService;
-    private MatriculaService matriculaService;
     private ReporteService reporteService;
     private EvaluacionService evaluacionService;
-    private IntentoService intentoService;
+    private IntentoService intentoService = new IntentoServiceMem();
 
-    // referencia al componente/card de Estudiante (para reemplazar placeholder)
+    /** Panel temporal para el dashboard del estudiante. */
     private Component cardEstudiantePlaceholder;
 
+    // -- Punto de entrada --
+
+    /** Inicia la aplicación. */
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new Ventana().setVisible(true));
     }
 
+    // -- Constructor --
+
+    /**
+     * Crea la ventana principal, inicializando el entorno gráfico y los servicios base.
+     */
     public Ventana() {
         super("Sistema de Matrícula y Calificaciones");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -41,45 +61,45 @@ public class Ventana extends JFrame {
         pack();
     }
 
-    /** Define las tarjetas iniciales en el contenedor principal. */
+    // -- Inicialización de vistas y servicios --
+
+    /** Crea los paneles iniciales y carga datos de demostración. */
     private void inicializarCards() {
-        // LOGIN
         LoginPanel login = new LoginPanel();
         login.setOnLogin(this::procesarLogin);
         login.setOnRecover(this::procesarRecuperacion);
         mainContainer.add(login, "LOGIN");
 
-        // ESTUDIANTE: placeholder (se reemplaza al iniciar sesión)
         cardEstudiantePlaceholder = crearPlaceholder("Dashboard Estudiante");
         mainContainer.add(cardEstudiantePlaceholder, "ESTUDIANTE");
-
-        // PROFESOR: placeholder (se reemplaza al iniciar sesión)
         mainContainer.add(crearPlaceholder("Dashboard Profesor"), "PROFESOR");
 
-        // ==== Servicios (una sola instancia de cada uno) ====
         usuarioService = new UsuarioServiceMem(auth);
-        usuarioService.seedDemo(); // admin, estudiantes, profes (con credenciales)
+        usuarioService.seedDemo();
 
         cursoService = new CursoServiceMem(usuarioService);
-        ((CursoServiceMem) cursoService).seedCursosDemo();                 // cursos base
-        ((CursoServiceMem) cursoService).seedGruposDemo(usuarioService);   // grupo vinculado a curso+profesor
+        ((CursoServiceMem) cursoService).seedCursosDemo();
+        ((CursoServiceMem) cursoService).seedGruposDemo(usuarioService);
 
         evaluacionService = new EvaluacionServiceMem(usuarioService, cursoService);
-        // Semilla evaluación de 5 preguntas para P200 (Mario Rojas)
         ((EvaluacionServiceMem) evaluacionService).seedEvaluacionesDemo5("P200", usuarioService);
 
-        matriculaService = new MatriculaServiceMem(usuarioService, cursoService);
-
+        MatriculaService matriculaService = new MatriculaServiceMem(usuarioService, cursoService);
         reporteService = new ReporteServicePdf(cursoService, usuarioService);
+        intentoService = new IntentoServiceMem();
 
-        intentoService = new IntentoServiceMem(); // ⬅️ NUEVO
-
-        // ADMIN
         AdminDashboardPanel admin = new AdminDashboardPanel(usuarioService, cursoService, reporteService);
         mainContainer.add(admin, "ADMIN");
     }
 
-    /** Procesa login con Autenticacion y muestra la vista del rol o error. */
+    // -- Autenticación --
+
+    /**
+     * Procesa el inicio de sesión según la identificación y contraseña ingresadas.
+     *
+     * @param identificacion ID del usuario
+     * @param password contraseña ingresada
+     */
     private void procesarLogin(String identificacion, char[] password) {
         Roles rol = auth.login(identificacion, password).rol;
         LoginPanel login = (LoginPanel) obtenerCard("LOGIN");
@@ -90,146 +110,135 @@ public class Ventana extends JFrame {
         if (login != null) login.setMensaje(" ");
 
         switch (rol) {
-            case ESTUDIANTE -> {
-                Estudiante estActual = usuarioService.listarEstudiantes().stream()
-                        .filter(e -> identificacion.equals(e.getIdUsuario()))
-                        .findFirst()
-                        .orElse(null);
-
-                if (estActual == null) {
-                    if (login != null) login.setMensaje("No se encontró el perfil de Estudiante.");
-                    return;
-                }
-
-                EstudianteDashboardPanel panelEst = new EstudianteDashboardPanel(
-                        usuarioService,
-                        cursoService,
-                        estActual,
-                        (Matricula m) -> {
-                            if (m == null || m.getGrupo() == null) {
-                                throw new IllegalStateException("Matrícula inválida: grupo no definido.");
-                            }
-                            Grupo g = m.getGrupo();
-                            if (g.getCurso() == null) {
-                                throw new IllegalStateException("El grupo no tiene curso asociado.");
-                            }
-                            java.util.List<Matricula> matsEst = estActual.obtenerMatriculas();
-                            if (matsEst == null) {
-                                matsEst = new java.util.ArrayList<>();
-                                estActual.setMatriculas(matsEst);
-                            } else if (!(matsEst instanceof java.util.ArrayList)) {
-                                matsEst = new java.util.ArrayList<>(matsEst);
-                                estActual.setMatriculas(matsEst);
-                            }
-                            for (Matricula mm : matsEst) {
-                                if (mm.getGrupo() != null && mm.getGrupo().equals(g)) {
-                                    throw new IllegalStateException("Ya estás matriculado en este grupo.");
-                                }
-                            }
-                            java.util.List<Matricula> matsGrupo = g.getMatriculas();
-                            if (matsGrupo == null) {
-                                matsGrupo = new java.util.ArrayList<>();
-                                g.setMatriculas(matsGrupo);
-                            } else if (!(matsGrupo instanceof java.util.ArrayList)) {
-                                matsGrupo = new java.util.ArrayList<>(matsGrupo);
-                                g.setMatriculas(matsGrupo);
-                            }
-                            int cupoMax = g.getCurso().getMaxEstu();
-                            if (cupoMax > 0 && matsGrupo.size() >= cupoMax) {
-                                throw new IllegalStateException("El grupo ya alcanzó el cupo máximo.");
-                            }
-                            matsEst.add(m);
-                            matsGrupo.add(m);
-                        },
-                        () -> {
-                            java.util.List<EvaluacionAsignada> out = new java.util.ArrayList<>();
-                            if (estActual.obtenerMatriculas() != null) {
-                                for (Matricula mat : estActual.obtenerMatriculas()) {
-                                    Grupo g = mat.getGrupo();
-                                    if (g != null && g.getEvaluacionesAsignadas() != null) {
-                                        out.addAll(g.getEvaluacionesAsignadas());
-                                    }
-                                }
-                            }
-                            return out;
-                        },
-                        () -> intentoService.listarPorEstudiante(estActual.getIdUsuario())
-                );
-
-                if (cardEstudiantePlaceholder != null) {
-                    mainContainer.remove(cardEstudiantePlaceholder);
-                    cardEstudiantePlaceholder = null;
-                }
-                mainContainer.add(panelEst, "ESTUDIANTE");
-                mainContainer.revalidate();
-                mainContainer.repaint();
-                mostrar("ESTUDIANTE");
-            }
-
-
-            case PROFESOR -> {
-                Profesor profActual = usuarioService.listarProfesores().stream()
-                        .filter(p -> identificacion.equals(p.getIdUsuario()))
-                        .findFirst()
-                        .orElse(null);
-
-                if (profActual == null) {
-                    if (login != null) login.setMensaje("No se encontró el perfil de Profesor.");
-                    return;
-                }
-
-                ProfesorSeguimientoPanel pnlSeg = new ProfesorSeguimientoPanel(
-                        usuarioService,
-                        cursoService,
-                        evaluacionService,
-                        profActual
-                );
-
-                ProfesorIntentosPanel pnlIntentos = new ProfesorIntentosPanel(
-                        usuarioService,
-                        cursoService,
-                        profActual,
-                        // proveedorIntentos: trae intentos del grupo via IntentoService
-                        (Grupo g) -> intentoService.listarPorGrupo(g.getIdGrupo()),
-                        // exportadorPdf: delega en tu ReporteServicePdf
-                        (IntentoEvaluacion ie, java.io.File destino) -> {
-                            try {
-                                return ((ReporteServicePdf) reporteService).exportarIntento(ie, destino);
-                            } catch (Exception ex) {
-                                ex.printStackTrace();
-                                return false;
-                            }
-                        }
-                );
-
-                ProfesorDashboardPanel panelProf = new ProfesorDashboardPanel(
-                        profActual,
-                        usuarioService,
-                        cursoService,
-                        evaluacionService,
-                        intentoService,
-                        reporteService
-                );
-
-                // Reemplaza el placeholder
-                Component ya = null;
-                for (Component c : mainContainer.getComponents()) {
-                    if (c instanceof ProfesorDashboardPanel) { ya = c; break; }
-                }
-                if (ya != null) mainContainer.remove(ya);
-
-                mainContainer.add(panelProf, "PROFESOR");
-                mainContainer.revalidate();
-                mainContainer.repaint();
-                mostrar("PROFESOR");
-            }
-
-
+            case ESTUDIANTE -> iniciarSesionEstudiante(identificacion, login);
+            case PROFESOR -> iniciarSesionProfesor(identificacion, login);
             case ADMIN -> mostrar("ADMIN");
         }
     }
 
-    /** Procesa recuperación de contraseña (stub). */
+    // -- Manejo de roles --
+
+    /** Inicia la sesión de un estudiante, configurando su panel principal. */
+    private void iniciarSesionEstudiante(String identificacion, LoginPanel login) {
+        Estudiante estActual = usuarioService.listarEstudiantes().stream()
+                .filter(e -> identificacion.equals(e.getIdUsuario()))
+                .findFirst()
+                .orElse(null);
+
+        if (estActual == null) {
+            if (login != null) login.setMensaje("No se encontró el perfil de Estudiante.");
+            return;
+        }
+
+        EstudianteDashboardPanel panelEst = new EstudianteDashboardPanel(
+                usuarioService,
+                cursoService,
+                estActual,
+                (Matricula m) -> {
+                    if (m == null || m.getGrupo() == null) {
+                        throw new IllegalStateException("Matrícula inválida: grupo no definido.");
+                    }
+                    Grupo g = m.getGrupo();
+                    if (g.getCurso() == null) {
+                        throw new IllegalStateException("El grupo no tiene curso asociado.");
+                    }
+                    java.util.List<Matricula> matsEst = estActual.obtenerMatriculas();
+                    if (matsEst == null) {
+                        matsEst = new java.util.ArrayList<>();
+                        estActual.setMatriculas(matsEst);
+                    } else if (!(matsEst instanceof java.util.ArrayList)) {
+                        matsEst = new java.util.ArrayList<>(matsEst);
+                        estActual.setMatriculas(matsEst);
+                    }
+                    for (Matricula mm : matsEst) {
+                        if (mm.getGrupo() != null && mm.getGrupo().equals(g)) {
+                            throw new IllegalStateException("Ya estás matriculado en este grupo.");
+                        }
+                    }
+                    java.util.List<Matricula> matsGrupo = g.getMatriculas();
+                    if (matsGrupo == null) {
+                        matsGrupo = new java.util.ArrayList<>();
+                        g.setMatriculas(matsGrupo);
+                    } else if (!(matsGrupo instanceof java.util.ArrayList)) {
+                        matsGrupo = new java.util.ArrayList<>(matsGrupo);
+                        g.setMatriculas(matsGrupo);
+                    }
+                    int cupoMax = g.getCurso().getMaxEstu();
+                    if (cupoMax > 0 && matsGrupo.size() >= cupoMax) {
+                        throw new IllegalStateException("El grupo ya alcanzó el cupo máximo.");
+                    }
+                    matsEst.add(m);
+                    matsGrupo.add(m);
+                },
+                () -> {
+                    java.util.List<EvaluacionAsignada> out = new java.util.ArrayList<>();
+                    if (estActual.obtenerMatriculas() != null) {
+                        for (Matricula mat : estActual.obtenerMatriculas()) {
+                            Grupo g = mat.getGrupo();
+                            if (g != null && g.getEvaluacionesAsignadas() != null) {
+                                out.addAll(g.getEvaluacionesAsignadas());
+                            }
+                        }
+                    }
+                    return out;
+                },
+                () -> intentoService.listarPorEstudiante(estActual.getIdUsuario()),
+                intentoService::guardar
+        );
+
+        if (cardEstudiantePlaceholder != null) {
+            mainContainer.remove(cardEstudiantePlaceholder);
+            cardEstudiantePlaceholder = null;
+        }
+        mainContainer.add(panelEst, "ESTUDIANTE");
+        mainContainer.revalidate();
+        mainContainer.repaint();
+        mostrar("ESTUDIANTE");
+    }
+
+    /** Inicia la sesión de un profesor y prepara su panel de trabajo. */
+    private void iniciarSesionProfesor(String identificacion, LoginPanel login) {
+        Profesor profActual = usuarioService.listarProfesores().stream()
+                .filter(p -> identificacion.equals(p.getIdUsuario()))
+                .findFirst()
+                .orElse(null);
+
+        if (profActual == null) {
+            if (login != null) login.setMensaje("No se encontró el perfil de Profesor.");
+            return;
+        }
+
+        ProfesorDashboardPanel panelProf = new ProfesorDashboardPanel(
+                profActual,
+                usuarioService,
+                cursoService,
+                evaluacionService,
+                intentoService,
+                reporteService
+        );
+
+        Component ya = null;
+        for (Component c : mainContainer.getComponents()) {
+            if (c instanceof ProfesorDashboardPanel) {
+                ya = c;
+                break;
+            }
+        }
+        if (ya != null) mainContainer.remove(ya);
+
+        mainContainer.add(panelProf, "PROFESOR");
+        mainContainer.revalidate();
+        mainContainer.repaint();
+        mostrar("PROFESOR");
+    }
+
+    // -- Recuperación de contraseña --
+
+    /**
+     * Procesa la recuperación de contraseña del usuario.
+     *
+     * @param identificacion ID del usuario a recuperar
+     */
     private void procesarRecuperacion(String identificacion) {
         LoginPanel login = (LoginPanel) obtenerCard("LOGIN");
         boolean ok = auth.recuperarContrasena(identificacion);
@@ -240,10 +249,11 @@ public class Ventana extends JFrame {
         }
     }
 
-    /** Vuelve al login y restaura el placeholder del estudiante. */
+    // -- Cierre de sesión --
+
+    /** Cierra la sesión actual y regresa a la pantalla de inicio de sesión. */
     private void cerrarSesion() {
         try {
-            // 1) Restaurar placeholder del Estudiante
             Component posibleDashEst = null;
             for (Component c : mainContainer.getComponents()) {
                 if (c instanceof EstudianteDashboardPanel) {
@@ -256,15 +266,12 @@ public class Ventana extends JFrame {
             }
             mainContainer.add(crearPlaceholder("Dashboard Estudiante"), "ESTUDIANTE");
 
-            // 2) Limpiar el LoginPanel (si lo encontramos)
             LoginPanel login = (LoginPanel) obtenerCard("LOGIN");
             if (login != null) {
                 login.setMensaje(" ");
             }
 
-            // 3) Mostrar LOGIN
             mostrar("LOGIN");
-
             mainContainer.revalidate();
             mainContainer.repaint();
 
@@ -273,22 +280,23 @@ public class Ventana extends JFrame {
         }
     }
 
-    /** Muestra una tarjeta por nombre. */
+    // -- Utilidades de interfaz --
+
+    /** Muestra una vista específica dentro del contenedor principal. */
     private void mostrar(String name) {
         CardLayout cl = (CardLayout) mainContainer.getLayout();
         cl.show(mainContainer, name);
     }
 
-    /** Obtiene el componente de una card por nombre (para mensajes). */
+    /** Busca y devuelve un panel específico por su nombre. */
     private Component obtenerCard(String name) {
-        // Implementación simple: devolvemos el LoginPanel si lo encontramos
         for (Component c : mainContainer.getComponents()) {
             if (c instanceof LoginPanel) return c;
         }
         return null;
     }
 
-    /** Crea un panel temporal para visualizar la navegación. */
+    /** Crea un panel genérico con texto centrado (placeholders). */
     private JPanel crearPlaceholder(String titulo) {
         JPanel p = new JPanel(new GridBagLayout());
         JLabel lbl = new JLabel(titulo);
@@ -297,13 +305,11 @@ public class Ventana extends JFrame {
         return p;
     }
 
-    /** Construye el menú superior básico. */
+    /** Crea la barra de menú principal de la aplicación. */
     private JMenuBar crearMenu() {
         JMenuBar mb = new JMenuBar();
 
         JMenu archivo = new JMenu("Archivo");
-
-        // NUEVO: Cerrar sesión
         JMenuItem cerrarSesion = new JMenuItem("Cerrar sesión");
         cerrarSesion.addActionListener(e -> cerrarSesion());
         archivo.add(cerrarSesion);
@@ -321,6 +327,5 @@ public class Ventana extends JFrame {
         mb.add(ayuda);
         return mb;
     }
-
 }
 

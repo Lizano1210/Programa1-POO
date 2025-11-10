@@ -8,30 +8,55 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * Diálogo para que el estudiante aplique una evaluación.
- * Construye un IntentoEvaluacion con el constructor de 9 parámetros y lo persiste vía callback.
+ * Diálogo que permite al estudiante aplicar una evaluación.
+ * <p>
+ * Controla el flujo de presentación de preguntas, el temporizador y
+ * la recopilación de respuestas. Al finalizar, construye un objeto
+ * {@link IntentoEvaluacion} y lo envía mediante un callback para su almacenamiento.
+ * </p>
  */
 public class EstudianteAplicarDialog extends JDialog {
 
+    // -- Atributos principales --
+
+    /** Estudiante que aplica la evaluación. */
     private final Estudiante estudiante;
+
+    /** Asignación de evaluación que contiene los datos del grupo y la evaluación. */
     private final EvaluacionAsignada asignacion;
+
+    /** Evaluación a aplicar. */
     private final Evaluacion evaluacion;
+
+    /** Grupo al que pertenece el estudiante. */
     private final Grupo grupo;
 
-    // Callback para persistir el intento (p.ej. intentoService::guardar)
+    /** Función callback para guardar el intento de evaluación. */
     private final Consumer<IntentoEvaluacion> onGuardar;
 
+    /** Indica si el intento fue guardado correctamente. */
     private boolean guardado = false;
+
+    /** @return true si el intento fue guardado correctamente. */
     public boolean isGuardado() { return guardado; }
 
+    /** Fecha y hora de inicio del intento. */
     private LocalDateTime inicio;
+
+    /** Fecha y hora de finalización del intento. */
     private LocalDateTime fin;
 
+    /** Lista de preguntas a resolver. */
     private final List<IPregunta> preguntas;
+
+    /** Respuestas del estudiante (una por pregunta). */
     private final List<RespuestaEstudiante> respuestas;
+
+    /** Índice de la pregunta actual. */
     private int idx = 0;
 
-    // UI
+    // -- Componentes de interfaz --
+
     private final JLabel lblTitulo = new JLabel();
     private final JLabel lblTimer = new JLabel("00:00");
     private final JTextArea txtDescripcion = new JTextArea(5, 50);
@@ -41,14 +66,26 @@ public class EstudianteAplicarDialog extends JDialog {
     private final JButton btnFinalizar = new JButton("Finalizar");
     private final JButton btnCancelar = new JButton("Cancelar");
 
-    // temporizador
+    // -- Temporizador --
+
     private javax.swing.Timer timer;
     private int remainingSeconds;
 
-    // controles para preguntas de selección
-    private ButtonGroup grupoRadio;      // para única / V-F
-    private JPanel opcionesPanel;        // contenedor para radios/checkboxes
+    // -- Controles para preguntas de selección --
 
+    private ButtonGroup grupoRadio;       // botones de selección única / verdadero-falso
+    private JPanel opcionesPanel;         // contenedor de opciones
+
+    // -- Constructor --
+
+    /**
+     * Crea el diálogo principal para aplicar una evaluación.
+     *
+     * @param owner ventana propietaria
+     * @param estudiante estudiante que aplica la evaluación
+     * @param asignacion evaluación asignada al grupo
+     * @param onGuardar función callback para guardar el intento (puede ser null)
+     */
     public EstudianteAplicarDialog(Window owner,
                                    Estudiante estudiante,
                                    EvaluacionAsignada asignacion,
@@ -60,10 +97,13 @@ public class EstudianteAplicarDialog extends JDialog {
         this.grupo = asignacion.getGrupo();
         this.onGuardar = (onGuardar == null ? it -> {} : onGuardar);
 
-        this.preguntas = (evaluacion.getPreguntas() == null) ? new ArrayList<>() : evaluacion.getPreguntas();
+        this.preguntas = (evaluacion.getPreguntas() == null)
+                ? new ArrayList<>()
+                : evaluacion.getPreguntas();
+
         this.respuestas = new ArrayList<>();
         for (IPregunta p : preguntas) {
-            this.respuestas.add(new RespuestaEstudiante(p)); // constructor con IPregunta existe
+            this.respuestas.add(new RespuestaEstudiante(p));
         }
 
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
@@ -74,20 +114,27 @@ public class EstudianteAplicarDialog extends JDialog {
         iniciarTemporizador();
         cargarPregunta(0);
 
-        // asegurar que si cierran con la X sin guardar, guardado=false
         addWindowListener(new java.awt.event.WindowAdapter() {
-            @Override public void windowClosing(java.awt.event.WindowEvent e) {
+            @Override
+            public void windowClosing(java.awt.event.WindowEvent e) {
                 guardado = false;
                 if (timer != null) timer.stop();
             }
         });
     }
 
+    /**
+     * Constructor alternativo sin callback de guardado.
+     */
     public EstudianteAplicarDialog(Window owner, Estudiante estudiante, EvaluacionAsignada asignacion) {
         this(owner, estudiante, asignacion, null);
     }
 
-    // ui
+    // -- Construcción de interfaz --
+
+    /**
+     * Construye los componentes visuales del diálogo.
+     */
     private void construirUI() {
         JPanel root = new JPanel(new BorderLayout(8, 8));
         root.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
@@ -127,6 +174,11 @@ public class EstudianteAplicarDialog extends JDialog {
         btnCancelar.addActionListener(e -> onCancelar());
     }
 
+    // -- Temporizador --
+
+    /**
+     * Inicia el temporizador de cuenta regresiva según la duración de la evaluación.
+     */
     private void iniciarTemporizador() {
         inicio = LocalDateTime.now();
         int durMin = Math.max(1, evaluacion.getDuracionMinutos());
@@ -137,7 +189,7 @@ public class EstudianteAplicarDialog extends JDialog {
             if (remainingSeconds < 0) remainingSeconds = 0;
             lblTimer.setText(formatoTiempo(remainingSeconds));
             if (remainingSeconds == 0) {
-                ((javax.swing.Timer)e.getSource()).stop();
+                ((javax.swing.Timer) e.getSource()).stop();
                 JOptionPane.showMessageDialog(this, "Se agotó el tiempo. Se enviará tu intento.");
                 onFinalizarYGuardar();
             }
@@ -146,13 +198,20 @@ public class EstudianteAplicarDialog extends JDialog {
         timer.start();
     }
 
+    /**
+     * Formatea los segundos restantes en formato mm:ss.
+     */
     private String formatoTiempo(int sec) {
         int m = sec / 60;
         int s = sec % 60;
         return String.format("%02d:%02d", m, s);
     }
 
-    // navegacion
+    // -- Navegación entre preguntas --
+
+    /**
+     * Carga la pregunta en la posición indicada.
+     */
     private void cargarPregunta(int i) {
         if (i < 0 || i >= preguntas.size()) return;
 
@@ -167,11 +226,11 @@ public class EstudianteAplicarDialog extends JDialog {
         if (p instanceof Pregunta q) {
             pintarPreguntaSeleccion(q, i);
         } else if (p instanceof Pareo) {
-            panelInteractivo.add(new JLabel("Pareo: interfaz simplificada no implementada aquí."), BorderLayout.CENTER);
+            panelInteractivo.add(new JLabel("Pareo: interfaz simplificada no implementada."), BorderLayout.CENTER);
         } else if (p instanceof SopaDeLetras) {
-            panelInteractivo.add(new JLabel("Sopa de letras: interfaz simplificada no implementada aquí."), BorderLayout.CENTER);
+            panelInteractivo.add(new JLabel("Sopa de letras: interfaz simplificada no implementada."), BorderLayout.CENTER);
         } else {
-            panelInteractivo.add(new JLabel("Tipo no soportado en este diálogo."), BorderLayout.CENTER);
+            panelInteractivo.add(new JLabel("Tipo no soportado."), BorderLayout.CENTER);
         }
 
         panelInteractivo.revalidate();
@@ -181,6 +240,9 @@ public class EstudianteAplicarDialog extends JDialog {
         btnNext.setEnabled(i < preguntas.size() - 1);
     }
 
+    /**
+     * Dibuja las opciones para preguntas de tipo selección.
+     */
     private void pintarPreguntaSeleccion(Pregunta q, int index) {
         opcionesPanel = new JPanel();
         opcionesPanel.setLayout(new BoxLayout(opcionesPanel, BoxLayout.Y_AXIS));
@@ -193,44 +255,42 @@ public class EstudianteAplicarDialog extends JDialog {
                     JRadioButton rb = new JRadioButton(resp.getOrden() + ") " + resp.getTexto());
                     rb.addActionListener(e -> {
                         re.limpiarSeleccion();
-                        re.setOrdenesSeleccionados(resp.getOrden()); // varargs int...
+                        re.setOrdenesSeleccionados(resp.getOrden());
                     });
                     grupoRadio.add(rb);
                     opcionesPanel.add(rb);
                 }
-                // preselección si ya había respuesta
                 marcarRadiosDesdeRespuesta(re);
             }
             case SELECCION_MULTIPLE -> {
                 for (var resp : q.getRespuestas()) {
                     JCheckBox cb = new JCheckBox(resp.getOrden() + ") " + resp.getTexto());
                     cb.addActionListener(e -> {
-                        // construimos una lista nueva desde la selección actual (inmutable)
                         List<Integer> current = new ArrayList<>(re.getOrdenesSeleccionados());
                         int ord = resp.getOrden();
                         if (cb.isSelected()) {
                             if (!current.contains(ord)) current.add(ord);
-                        } else {
-                            current.remove((Integer) ord);
-                        }
-                        re.setOrdenesSeleccionados(current); // setter con List<Integer>
+                        } else current.remove((Integer) ord);
+                        re.setOrdenesSeleccionados(current);
                     });
                     opcionesPanel.add(cb);
                 }
                 marcarChecksDesdeRespuesta(re);
             }
-            default -> opcionesPanel.add(new JLabel("Tipo de selección no soportado."));
+            default -> opcionesPanel.add(new JLabel("Tipo no soportado."));
         }
 
         panelInteractivo.add(opcionesPanel, BorderLayout.CENTER);
     }
 
+    /**
+     * Marca los botones de opción según la respuesta guardada.
+     */
     private void marcarRadiosDesdeRespuesta(RespuestaEstudiante re) {
         List<Integer> seleccion = re.getOrdenesSeleccionados();
         int sel = (seleccion.isEmpty() ? -1 : seleccion.get(0));
         for (Component c : opcionesPanel.getComponents()) {
             if (c instanceof JRadioButton rb) {
-                // formato "N) texto", así que parseamos N al inicio
                 String txt = rb.getText();
                 int paren = txt.indexOf(')');
                 if (paren > 0) {
@@ -243,6 +303,9 @@ public class EstudianteAplicarDialog extends JDialog {
         }
     }
 
+    /**
+     * Marca las casillas de verificación según la respuesta guardada.
+     */
     private void marcarChecksDesdeRespuesta(RespuestaEstudiante re) {
         List<Integer> seleccion = re.getOrdenesSeleccionados();
         for (Component c : opcionesPanel.getComponents()) {
@@ -259,21 +322,28 @@ public class EstudianteAplicarDialog extends JDialog {
         }
     }
 
-    // funciones
-    private void onPrev() {
-        if (idx > 0) cargarPregunta(idx - 1);
-    }
+    // -- Control de navegación --
 
-    private void onNext() {
-        if (idx < preguntas.size() - 1) cargarPregunta(idx + 1);
-    }
+    /** Muestra la pregunta anterior. */
+    private void onPrev() { if (idx > 0) cargarPregunta(idx - 1); }
 
+    /** Muestra la siguiente pregunta. */
+    private void onNext() { if (idx < preguntas.size() - 1) cargarPregunta(idx + 1); }
+
+    // -- Guardado y finalización --
+
+    /**
+     * Finaliza el intento y guarda las respuestas del estudiante.
+     * <p>
+     * Construye un {@link IntentoEvaluacion}, calcula la calificación y
+     * ejecuta el callback {@link #onGuardar}.
+     * </p>
+     */
     private void onFinalizarYGuardar() {
         try {
             if (timer != null) timer.stop();
             fin = LocalDateTime.now();
 
-            // ordenPreguntasUsado: usamos los IDs si hay, si no, índices 1..N
             List<Integer> ordenUsado = new ArrayList<>();
             for (IPregunta p : preguntas) {
                 if (p instanceof Pregunta pq) ordenUsado.add(pq.getId());
@@ -292,10 +362,7 @@ public class EstudianteAplicarDialog extends JDialog {
                     ordenUsado
             );
 
-
             intento.calcularCalificacion();
-
-            // persistimos
             onGuardar.accept(intento);
 
             guardado = true;
@@ -305,10 +372,14 @@ public class EstudianteAplicarDialog extends JDialog {
         }
     }
 
+    /**
+     * Cancela la aplicación de la evaluación sin guardar.
+     */
     private void onCancelar() {
         guardado = false;
         if (timer != null) timer.stop();
         dispose();
     }
 }
+
 

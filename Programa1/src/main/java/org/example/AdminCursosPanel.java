@@ -5,26 +5,42 @@ import javax.swing.table.AbstractTableModel;
 import java.awt.*;
 import java.util.List;
 
-/** Panel de gestión de Cursos. */
+/**
+ * Panel para la gestión de cursos.
+ * Permite listar, crear, editar, eliminar y gestionar los grupos
+ * asociados a cada curso.
+ */
 public class AdminCursosPanel extends JPanel {
 
+    /** Servicio encargado de la gestión de cursos. */
     private final CursoService cursoService;
-    private final UsuarioService usuarioService; // para elegir profesor en grupos
 
+    /** Servicio de usuarios, usado para elegir profesor en los grupos. */
+    private final UsuarioService usuarioService;
+
+    /** Tabla que muestra los cursos registrados. */
     private final JTable tblCursos = new JTable();
+
+    /** Modelo de tabla con los datos de los cursos. */
     private final CursosModel cursosModel = new CursosModel();
 
+    /**
+     * Crea un nuevo panel de administración de cursos.
+     *
+     * @param cursoService servicio encargado de manejar los cursos
+     * @param usuarioService servicio de usuarios, usado en la gestión de grupos
+     */
     public AdminCursosPanel(CursoService cursoService, UsuarioService usuarioService) {
         this.cursoService = cursoService;
         this.usuarioService = usuarioService;
 
         setLayout(new BorderLayout());
 
-        // Tabla
+        // --- Tabla de cursos ---
         tblCursos.setModel(cursosModel);
         add(new JScrollPane(tblCursos), BorderLayout.CENTER);
 
-        // Acciones
+        // --- Panel de acciones ---
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         JButton btnNuevo = new JButton("Nuevo curso");
         JButton btnEditar = new JButton("Editar curso");
@@ -38,7 +54,7 @@ public class AdminCursosPanel extends JPanel {
         actions.add(btnRefrescar);
         add(actions, BorderLayout.SOUTH);
 
-        // Listeners, el _evt es como llamar al método sin enviar parametros
+        // --- Eventos de los botones ---
         btnRefrescar.addActionListener(_evt -> refrescar());
         btnNuevo.addActionListener(_evt -> onNuevo());
         btnEditar.addActionListener(_evt -> onEditar());
@@ -48,15 +64,27 @@ public class AdminCursosPanel extends JPanel {
         refrescar();
     }
 
+    /**
+     * Actualiza la tabla con los cursos más recientes.
+     */
     private void refrescar() {
         cursosModel.setData(cursoService.listarCursos());
     }
 
+    /**
+     * Obtiene el curso actualmente seleccionado en la tabla.
+     *
+     * @return el curso seleccionado o {@code null} si no hay selección
+     */
     private Curso getSeleccionado() {
         int r = tblCursos.getSelectedRow();
         return (r < 0) ? null : cursosModel.getAt(r);
     }
 
+    /**
+     * Acción para crear un nuevo curso.
+     * Abre un diálogo y, si el usuario guarda, agrega el curso.
+     */
     private void onNuevo() {
         AdminCursoDialog dlg = new AdminCursoDialog(SwingUtilities.getWindowAncestor(this), null);
         dlg.setVisible(true);
@@ -72,9 +100,16 @@ public class AdminCursosPanel extends JPanel {
         }
     }
 
+    /**
+     * Acción para editar el curso seleccionado.
+     * Si el usuario guarda los cambios, actualiza la información del curso.
+     */
     private void onEditar() {
         Curso sel = getSeleccionado();
-        if (sel == null) { JOptionPane.showMessageDialog(this, "Seleccione un curso."); return; }
+        if (sel == null) {
+            JOptionPane.showMessageDialog(this, "Seleccione un curso.");
+            return;
+        }
         AdminCursoDialog dlg = new AdminCursoDialog(SwingUtilities.getWindowAncestor(this), sel);
         dlg.setVisible(true);
         Curso editado = dlg.getResultado();
@@ -89,47 +124,112 @@ public class AdminCursosPanel extends JPanel {
         }
     }
 
+    /**
+     * Acción para eliminar el curso seleccionado.
+     * Pide confirmación antes de eliminarlo.
+     */
     private void onEliminar() {
         Curso sel = getSeleccionado();
-        if (sel == null) { JOptionPane.showMessageDialog(this, "Seleccione un curso."); return; }
-        int r = JOptionPane.showConfirmDialog(this, "¿Eliminar el curso " + sel.getNombre() + "?", "Confirmar", JOptionPane.YES_NO_OPTION);
+        if (sel == null) {
+            JOptionPane.showMessageDialog(this, "Seleccione un curso.");
+            return;
+        }
+        int r = JOptionPane.showConfirmDialog(this,
+                "¿Eliminar el curso " + sel.getNombre() + "?",
+                "Confirmar", JOptionPane.YES_NO_OPTION);
         if (r == JOptionPane.YES_OPTION) {
             try {
                 cursoService.eliminarCurso(sel.getId());
                 refrescar();
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, ex.getMessage(), "No se pudo eliminar", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, ex.getMessage(),
+                        "No se pudo eliminar", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
 
+    /**
+     * Acción para abrir la ventana de gestión de grupos de un curso.
+     */
     private void onGrupos() {
         Curso sel = getSeleccionado();
-        if (sel == null) { JOptionPane.showMessageDialog(this, "Seleccione un curso."); return; }
-        AdminGruposDialog dlg = new AdminGruposDialog(SwingUtilities.getWindowAncestor(this), sel, cursoService, usuarioService);
+        if (sel == null) {
+            JOptionPane.showMessageDialog(this, "Seleccione un curso.");
+            return;
+        }
+        AdminGruposDialog dlg = new AdminGruposDialog(
+                SwingUtilities.getWindowAncestor(this),
+                sel,
+                cursoService,
+                usuarioService
+        );
         dlg.setVisible(true);
-        // Al cerrar, refrescamos por si cambió algo del curso (grupos)
+        // Al cerrar, se actualiza la tabla por si hubo cambios
         refrescar();
     }
 
-    // Table model
+    // --- Modelo de tabla interno ---
+
+    /**
+     * Modelo de tabla que muestra los cursos en la interfaz.
+     * Define las columnas y los datos que se presentan.
+     */
     private static class CursosModel extends AbstractTableModel {
-        private final String[] cols = {"ID", "Nombre", "Modalidad", "Tipo", "Min", "Max", "Horas/día", "Aprobación"};
+
+        /** Nombres de las columnas mostradas en la tabla. */
+        private final String[] cols = {
+                "ID", "Nombre", "Modalidad", "Tipo",
+                "Min", "Max", "Horas/día", "Aprobación"
+        };
+
+        /** Lista de cursos a mostrar. */
         private List<Curso> data = List.of();
-        public void setData(List<Curso> list) { data = (list==null?List.of():list); fireTableDataChanged(); }
-        public Curso getAt(int row) { return data.get(row); }
-        @Override public int getRowCount() { return data.size(); }
-        @Override public int getColumnCount() { return cols.length; }
-        @Override public String getColumnName(int c) { return cols[c]; }
-        @Override public Object getValueAt(int r, int c) {
+
+        /**
+         * Establece los datos de la tabla.
+         *
+         * @param list lista de cursos a mostrar
+         */
+        public void setData(List<Curso> list) {
+            data = (list == null ? List.of() : list);
+            fireTableDataChanged();
+        }
+
+        /**
+         * Obtiene el curso correspondiente a una fila.
+         *
+         * @param row índice de la fila
+         * @return curso asociado a la fila
+         */
+        public Curso getAt(int row) {
+            return data.get(row);
+        }
+
+        @Override
+        public int getRowCount() {
+            return data.size();
+        }
+
+        @Override
+        public int getColumnCount() {
+            return cols.length;
+        }
+
+        @Override
+        public String getColumnName(int c) {
+            return cols[c];
+        }
+
+        @Override
+        public Object getValueAt(int r, int c) {
             Curso x = data.get(r);
             return switch (c) {
                 case 0 -> x.getId();
                 case 1 -> x.getNombre();
                 case 2 -> String.valueOf(x.getModalidad());
                 case 3 -> String.valueOf(x.getTipo());
-                case 4 -> x.getMinEstu();   // getters usados por Grupo y Admin. cite
-                case 5 -> x.getMaxEstu();   // idem
+                case 4 -> x.getMinEstu();
+                case 5 -> x.getMaxEstu();
                 case 6 -> x.getHrsDia();
                 case 7 -> x.getAprobCalificacion();
                 default -> "";

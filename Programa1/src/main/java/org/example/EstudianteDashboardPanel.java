@@ -9,46 +9,82 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+/**
+ * Panel principal del estudiante.
+ * <p>
+ * Permite consultar la información personal del estudiante, realizar matrículas en cursos y grupos,
+ * y acceder a las evaluaciones asignadas con la posibilidad de rendirlas o visualizar notas.
+ * </p>
+ */
 public class EstudianteDashboardPanel extends JPanel {
 
+    // -- Servicios y referencias --
+
+    /** Servicio de usuarios en memoria. */
     private final UsuarioServiceMem usuarioService;
+
+    /** Servicio de cursos y grupos. */
     private final CursoService cursoService;
+
+    /** Estudiante actual que usa el panel. */
     private final Estudiante estudiante;
 
+    /** Acción a ejecutar cuando se matricula un estudiante en un grupo. */
     private final Consumer<Matricula> onMatricular;
+
+    /** Proveedor que entrega la lista de evaluaciones asignadas al estudiante. */
     private final Supplier<List<EvaluacionAsignada>> proveedorAsignaciones;
 
+    /** Proveedor que entrega los intentos realizados por el estudiante. */
     private final Supplier<List<IntentoEvaluacion>> proveedorIntentosEstudiante;
+
+    /** Acción a ejecutar cuando se guarda un intento de evaluación. */
+    private final Consumer<IntentoEvaluacion> onGuardarIntento;
+
+    // -- Componentes principales --
 
     private final JTabbedPane tabs = new JTabbedPane();
 
-    // Matrícula
     private final JTable tblCursos = new JTable();
     private final JTable tblGrupos = new JTable();
     private final CursosModel cursosModel = new CursosModel();
     private final GruposModel gruposModel = new GruposModel();
     private final JButton btnMatricular = new JButton("Matricular en grupo seleccionado");
 
-    // Evaluaciones
     private final JTable tblAsignadas = new JTable();
     private final AsignadasModel asignadasModel = new AsignadasModel();
     private final JButton btnRefrescarEval = new JButton("Refrescar");
     private final JButton btnRendir = new JButton("Rendir");
     private final JButton btnVerNota = new JButton("Ver Nota");
 
+    // -- Constructor --
+
+    /**
+     * Crea el panel principal del estudiante.
+     *
+     * @param usuarioService servicio de usuarios
+     * @param cursoService servicio de cursos
+     * @param estudiante instancia del estudiante actual
+     * @param onMatricular acción al matricularse
+     * @param proveedorAsignaciones proveedor de evaluaciones asignadas
+     * @param proveedorIntentosEstudiante proveedor de intentos del estudiante
+     * @param onGuardarIntento acción al guardar un intento de evaluación
+     */
     public EstudianteDashboardPanel(UsuarioServiceMem usuarioService,
                                     CursoService cursoService,
                                     Estudiante estudiante,
                                     Consumer<Matricula> onMatricular,
                                     Supplier<List<EvaluacionAsignada>> proveedorAsignaciones,
-                                    Supplier<List<IntentoEvaluacion>> proveedorIntentosEstudiante
-    ) {
+                                    Supplier<List<IntentoEvaluacion>> proveedorIntentosEstudiante,
+                                    Consumer<IntentoEvaluacion> onGuardarIntento) {
+
         this.usuarioService = Objects.requireNonNull(usuarioService);
         this.cursoService = Objects.requireNonNull(cursoService);
         this.estudiante = Objects.requireNonNull(estudiante);
         this.onMatricular = Objects.requireNonNull(onMatricular);
         this.proveedorAsignaciones = Objects.requireNonNull(proveedorAsignaciones);
         this.proveedorIntentosEstudiante = Objects.requireNonNull(proveedorIntentosEstudiante);
+        this.onGuardarIntento = Objects.requireNonNull(onGuardarIntento);
 
         setLayout(new BorderLayout());
         construirUI();
@@ -56,13 +92,18 @@ public class EstudianteDashboardPanel extends JPanel {
         cargarEvaluaciones();
     }
 
+    // -- Construcción de interfaz --
+
+    /**
+     * Construye la interfaz gráfica del panel con sus pestañas.
+     */
     private void construirUI() {
         JPanel info = new JPanel(new GridBagLayout());
         GridBagConstraints c = new GridBagConstraints();
         c.insets = new Insets(6,6,6,6);
         c.anchor = GridBagConstraints.WEST;
 
-        int r=0;
+        int r = 0;
         infoAdd(info, c, r++, "Nombre:", estudiante.getNombre() + " " + estudiante.getApellido1() + " " + estudiante.getApellido2());
         infoAdd(info, c, r++, "ID:", estudiante.getIdUsuario());
         infoAdd(info, c, r++, "Correo:", estudiante.getCorreo());
@@ -73,6 +114,7 @@ public class EstudianteDashboardPanel extends JPanel {
 
         tabs.addTab("Información", new JScrollPane(info));
 
+        // -- Pestaña de matrícula --
         JPanel matricula = new JPanel(new BorderLayout(8,8));
         JPanel top = new JPanel(new GridLayout(1,2,8,8));
 
@@ -98,9 +140,9 @@ public class EstudianteDashboardPanel extends JPanel {
         });
 
         btnMatricular.addActionListener(e -> onMatricularClicked());
-
         tabs.addTab("Matrícula", matricula);
 
+        // -- Pestaña de evaluaciones --
         JPanel eval = new JPanel(new BorderLayout(8,8));
         tblAsignadas.setModel(asignadasModel);
         JPanel north = new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -125,11 +167,15 @@ public class EstudianteDashboardPanel extends JPanel {
         add(tabs, BorderLayout.CENTER);
     }
 
+    // -- Auxiliares de interfaz --
+
+    /** Agrega una fila de información al panel de datos personales. */
     private void infoAdd(JPanel p, GridBagConstraints c, int row, String label, String value) {
         c.gridx=0; c.gridy=row; c.weightx=0; p.add(new JLabel(label), c);
         c.gridx=1; c.gridy=row; c.weightx=1; p.add(new JLabel(value == null ? "-" : value), c);
     }
 
+    /** Envuelve un componente con un borde titulado. */
     private JPanel wrap(String title, JComponent comp) {
         JPanel p = new JPanel(new BorderLayout());
         p.setBorder(BorderFactory.createTitledBorder(title));
@@ -137,6 +183,9 @@ public class EstudianteDashboardPanel extends JPanel {
         return p;
     }
 
+    // -- Carga de datos --
+
+    /** Carga los cursos disponibles desde el servicio. */
     private void cargarCursos() {
         try {
             List<Curso> cursos = cursoService.listarCursos();
@@ -150,6 +199,7 @@ public class EstudianteDashboardPanel extends JPanel {
         }
     }
 
+    /** Carga los grupos pertenecientes al curso seleccionado. */
     private void cargarGrupos(Curso curso) {
         try {
             List<Grupo> grupos = (curso == null) ? new ArrayList<>() : curso.grupos;
@@ -159,6 +209,7 @@ public class EstudianteDashboardPanel extends JPanel {
         }
     }
 
+    /** Carga las evaluaciones asignadas al estudiante. */
     private void cargarEvaluaciones() {
         try {
             List<EvaluacionAsignada> lst = proveedorAsignaciones.get();
@@ -168,6 +219,11 @@ public class EstudianteDashboardPanel extends JPanel {
         }
     }
 
+    // -- Matrícula --
+
+    /**
+     * Ejecuta el proceso de matrícula del estudiante en el grupo seleccionado.
+     */
     private void onMatricularClicked() {
         int rc = tblCursos.getSelectedRow();
         int rg = tblGrupos.getSelectedRow();
@@ -192,25 +248,29 @@ public class EstudianteDashboardPanel extends JPanel {
         }
     }
 
+    // -- Evaluaciones --
+
+    /** Obtiene la evaluación actualmente seleccionada en la tabla. */
     private EvaluacionAsignada asignadaSeleccionada() {
         int r = tblAsignadas.getSelectedRow();
         return (r < 0) ? null : asignadasModel.getAt(r);
     }
 
+    /**
+     * Permite al estudiante rendir una evaluación asignada.
+     */
     private void onRendirEvaluacion() {
         EvaluacionAsignada ea = asignadaSeleccionada();
         if (ea == null) {
             JOptionPane.showMessageDialog(this, "Seleccione una evaluación.");
             return;
         }
-        // Bloqueo de reintento
         if (yaExisteIntento(ea)) {
             JOptionPane.showMessageDialog(this, "Ya realizaste esta evaluación.");
             return;
         }
-        // Ventana para aplicar (asumiendo que ya creaste EstudianteAplicarDialog y guarda el intento vía callback)
         Window owner = SwingUtilities.getWindowAncestor(this);
-        EstudianteAplicarDialog dlg = new EstudianteAplicarDialog(owner, estudiante, ea);
+        EstudianteAplicarDialog dlg = new EstudianteAplicarDialog(owner, estudiante, ea, onGuardarIntento);
         dlg.setVisible(true);
         if (dlg.isGuardado()) {
             JOptionPane.showMessageDialog(this, "Tu intento fue guardado.");
@@ -218,6 +278,9 @@ public class EstudianteDashboardPanel extends JPanel {
         }
     }
 
+    /**
+     * Muestra la nota obtenida en una evaluación ya realizada.
+     */
     private void onVerNota() {
         EvaluacionAsignada ea = asignadaSeleccionada();
         if (ea == null) {
@@ -235,10 +298,19 @@ public class EstudianteDashboardPanel extends JPanel {
                         "\nCalificación: " + String.format("%.2f", it.getCalificacion()));
     }
 
+    // -- Verificación de intentos --
+
+    /** Verifica si el estudiante ya realizó la evaluación. */
     private boolean yaExisteIntento(EvaluacionAsignada ea) {
         return intentoDelEstudiante(ea) != null;
     }
 
+    /**
+     * Busca un intento del estudiante para una evaluación específica.
+     *
+     * @param ea evaluación asignada
+     * @return intento correspondiente o null si no existe
+     */
     private IntentoEvaluacion intentoDelEstudiante(EvaluacionAsignada ea) {
         List<IntentoEvaluacion> intentos = proveedorIntentosEstudiante.get();
         if (intentos == null) return null;
@@ -258,7 +330,9 @@ public class EstudianteDashboardPanel extends JPanel {
         return null;
     }
 
-    // ====== Modelos ======
+    // -- Modelos de tablas auxiliares --
+
+    /** Modelo de tabla para cursos disponibles. */
     static class CursosModel extends AbstractTableModel {
         private final String[] cols = {"ID", "Nombre", "Modalidad", "Tipo", "Grupos"};
         private List<Curso> data = new ArrayList<>();
@@ -280,6 +354,7 @@ public class EstudianteDashboardPanel extends JPanel {
         }
     }
 
+    /** Modelo de tabla para grupos pertenecientes a un curso. */
     static class GruposModel extends AbstractTableModel {
         private final String[] cols = {"Sigla", "Curso", "Profesor", "Cupo", "Matriculados"};
         private List<Grupo> data = new ArrayList<>();
@@ -301,6 +376,7 @@ public class EstudianteDashboardPanel extends JPanel {
         }
     }
 
+    /** Modelo de tabla para evaluaciones asignadas al estudiante. */
     static class AsignadasModel extends AbstractTableModel {
         private final String[] cols = {"Evaluación", "Grupo", "Inicio", "Fin", "Duración (min)", "Mi calificación"};
         private List<EvaluacionAsignada> data = new ArrayList<>();
@@ -317,7 +393,7 @@ public class EstudianteDashboardPanel extends JPanel {
                 case 2 -> ea.getFechaHoraInicio();
                 case 3 -> ea.getFechaHoraFinal();
                 case 4 -> ea.getEvaluacion() == null ? 0 : ea.getEvaluacion().getDuracionMinutos();
-                case 5 -> {yield "-";}
+                case 5 -> "-";
                 default -> "";
             };
         }

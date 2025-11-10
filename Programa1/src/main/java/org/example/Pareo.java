@@ -3,92 +3,101 @@ package org.example;
 import java.util.*;
 
 /**
- * Pregunta de tipo emparejamiento entre conceptos y definiciones.
- * El estudiante debe relacionar enunciados de la columna izquierda
- * con respuestas de la columna derecha.
- * 
- * Archivo: Pareo.java
+ * Representa una pregunta de tipo emparejamiento (pareo) entre conceptos y definiciones.
+ * <p>
+ * El estudiante debe asociar correctamente los elementos de la columna izquierda (enunciados)
+ * con las opciones de la columna derecha (respuestas). Cada emparejamiento correcto otorga
+ * una fracción del puntaje total.
+ * </p>
  */
 public class Pareo implements IPregunta {
 
-    int id;
-    String descripcion;
-    int puntos;
-    List<String> enunciados = new ArrayList<>();
-    List<String> respuestas = new ArrayList<>();
-    Map<Integer, Integer> asociaciones = new HashMap<>(); // índice enunciado -> índice respuesta correcta
+    // -- Atributos --
 
+    /** Identificador único de la pregunta. */
+    private int id;
+
+    /** Texto descriptivo o enunciado principal. */
+    private String descripcion;
+
+    /** Puntaje total asignado a la pregunta. */
+    private int puntos;
+
+    /** Lista de enunciados (columna izquierda). */
+    private final List<String> enunciados = new ArrayList<>();
+
+    /** Lista de respuestas disponibles (columna derecha). */
+    private final List<String> respuestas = new ArrayList<>();
+
+    /** Mapa que define las asociaciones correctas: índice del enunciado → índice de respuesta. */
+    private final Map<Integer, Integer> asociaciones = new HashMap<>();
+
+    // -- Constructor --
+
+    /**
+     * Crea una nueva pregunta de tipo pareo.
+     *
+     * @param id identificador único
+     * @param descripcion enunciado de la pregunta
+     * @param puntos puntaje total que otorga
+     */
     public Pareo(int id, String descripcion, int puntos) {
         this.id = id;
         this.descripcion = (descripcion == null ? "" : descripcion.trim());
         this.puntos = puntos;
     }
 
+    // -- Gestión de enunciados y respuestas --
+
     /**
-     * Agrega un elemento a emparejar (columna izquierda).
-     * 
-     * @param enunciado Texto del enunciado (5-100 caracteres)
-     * @return true si se agregó correctamente
+     * Agrega un enunciado (columna izquierda).
+     *
+     * @param enunciado texto del enunciado (entre 5 y 100 caracteres)
+     * @return {@code true} si se agregó correctamente
      */
     public boolean agregarEnunciado(String enunciado) {
-        if (enunciado == null || enunciado.trim().isEmpty()) {
-            System.out.println("El enunciado no puede estar vacío.");
-            return false;
-        }
+        if (enunciado == null || enunciado.trim().isEmpty()) return false;
         String texto = enunciado.trim();
-        if (texto.length() < 5 || texto.length() > 100) {
-            System.out.println("El enunciado debe tener entre 5 y 100 caracteres.");
-            return false;
-        }
+        if (texto.length() < 5 || texto.length() > 100) return false;
         enunciados.add(texto);
         return true;
     }
 
     /**
-     * Agrega una opción en la columna derecha (puede ser correcta o distractor).
-     * 
-     * @param respuesta Texto de la respuesta (5-100 caracteres)
-     * @return true si se agregó correctamente
+     * Agrega una respuesta (columna derecha).
+     *
+     * @param respuesta texto de la respuesta (entre 5 y 100 caracteres)
+     * @return {@code true} si se agregó correctamente
      */
     public boolean agregarRespuesta(String respuesta) {
-        if (respuesta == null || respuesta.trim().isEmpty()) {
-            System.out.println("La respuesta no puede estar vacía.");
-            return false;
-        }
+        if (respuesta == null || respuesta.trim().isEmpty()) return false;
         String texto = respuesta.trim();
-        if (texto.length() < 5 || texto.length() > 100) {
-            System.out.println("La respuesta debe tener entre 5 y 100 caracteres.");
-            return false;
-        }
+        if (texto.length() < 5 || texto.length() > 100) return false;
         respuestas.add(texto);
         return true;
     }
 
     /**
-     * Define qué enunciado se asocia con qué respuesta correcta.
-     * 
-     * @param enunciadoIdx Índice del enunciado (0-based)
-     * @param respuestaIdx Índice de la respuesta correcta (0-based)
-     * @return true si la asociación se definió correctamente
+     * Define la asociación correcta entre un enunciado y una respuesta.
+     *
+     * @param enunciadoIdx índice del enunciado (0 basado)
+     * @param respuestaIdx índice de la respuesta correcta (0 basado)
+     * @return {@code true} si la asociación se definió correctamente
      */
     public boolean definirAsociacion(int enunciadoIdx, int respuestaIdx) {
-        if (enunciadoIdx < 0 || enunciadoIdx >= enunciados.size()) {
-            System.out.println("Índice de enunciado fuera de rango.");
-            return false;
-        }
-        if (respuestaIdx < 0 || respuestaIdx >= respuestas.size()) {
-            System.out.println("Índice de respuesta fuera de rango.");
-            return false;
-        }
+        if (enunciadoIdx < 0 || enunciadoIdx >= enunciados.size()) return false;
+        if (respuestaIdx < 0 || respuestaIdx >= respuestas.size()) return false;
         asociaciones.put(enunciadoIdx, respuestaIdx);
         return true;
     }
 
+    // -- Utilidades de presentación --
+
     /**
-     * Genera el orden aleatorio de las respuestas para mostrar al estudiante.
-     * 
-     * @param rng Generador de números aleatorios (null usa uno nuevo)
-     * @return Lista con los índices en orden aleatorio
+     * Genera un orden aleatorio de las respuestas para mostrar al estudiante.
+     *
+     * @param rng generador de números aleatorios (puede ser {@code null})
+     * @return lista con los índices de respuesta en orden aleatorio
      */
     public List<Integer> generarOrdenRespuestas(Random rng) {
         List<Integer> indices = new ArrayList<>();
@@ -99,133 +108,86 @@ public class Pareo implements IPregunta {
         return indices;
     }
 
+    // -- Calificación --
+
     /**
-     * Califica la respuesta del estudiante comparando sus asociaciones
-     * con las correctas. Otorga puntos proporcionales.
-     * 
-     * @param respuesta Respuesta del estudiante con sus emparejamientos
-     * @return Puntos obtenidos (puede ser parcial)
+     * Califica las asociaciones del estudiante comparándolas con las correctas.
+     * <p>
+     * Cada emparejamiento correcto otorga una fracción proporcional del puntaje total.
+     * </p>
+     *
+     * @param respuesta respuesta del estudiante que contiene sus emparejamientos
+     * @return puntos obtenidos (pueden ser parciales)
      */
     @Override
     public int calificar(RespuestaEstudiante respuesta) {
         if (respuesta == null) return 0;
-        
-        // Obtener las asociaciones del estudiante
-        // Asumimos que RespuestaEstudiante tiene un método para esto
-        // Por ahora usamos ordenesSeleccionados como lista de pares [enunciadoIdx, respuestaIdx]
         List<Integer> selecciones = respuesta.getOrdenesSeleccionados();
         if (selecciones == null || selecciones.isEmpty()) return 0;
 
         int correctas = 0;
-        int totalAsociaciones = asociaciones.size();
+        int total = asociaciones.size();
 
-        // Validar emparejamientos (formato esperado: pares consecutivos)
         for (int i = 0; i < selecciones.size() - 1; i += 2) {
             int enunciadoIdx = selecciones.get(i);
             int respuestaIdx = selecciones.get(i + 1);
-
-            // Verificar si la asociación es correcta
-            Integer respuestaCorrecta = asociaciones.get(enunciadoIdx);
-            if (respuestaCorrecta != null && respuestaCorrecta == respuestaIdx) {
-                correctas++;
-            }
+            Integer correcta = asociaciones.get(enunciadoIdx);
+            if (correcta != null && correcta == respuestaIdx) correctas++;
         }
 
-        // Calificación proporcional
-        if (totalAsociaciones == 0) return 0;
-        double proporcion = (double) correctas / totalAsociaciones;
+        if (total == 0) return 0;
+        double proporcion = (double) correctas / total;
         return (int) Math.round(puntos * proporcion);
     }
 
+    // -- Validación --
+
+    /**
+     * Verifica que la pregunta esté correctamente definida.
+     *
+     * @return {@code true} si todos los datos son válidos
+     */
     @Override
     public boolean validarDatos() {
-        // Debe tener al menos 2 enunciados
-        if (enunciados == null || enunciados.size() < 2) {
-            System.out.println("Debe haber al menos 2 enunciados.");
-            return false;
-        }
-
-        // Debe tener al menos tantas respuestas como enunciados
-        if (respuestas == null || respuestas.size() < enunciados.size()) {
-            System.out.println("Debe haber al menos tantas respuestas como enunciados.");
-            return false;
-        }
-
-        // Cada enunciado debe tener una asociación definida
-        for (int i = 0; i < enunciados.size(); i++) {
-            if (!asociaciones.containsKey(i)) {
-                System.out.println("El enunciado " + i + " no tiene asociación definida.");
-                return false;
-            }
-        }
-
-        // Los puntos deben ser válidos
-        if (puntos < 1) {
-            System.out.println("Los puntos deben ser al menos 1.");
-            return false;
-        }
-
-        // La descripción debe ser válida
-        if (descripcion == null || descripcion.trim().isEmpty()) {
-            System.out.println("La descripción no puede estar vacía.");
-            return false;
-        }
-
-        return true;
+        if (enunciados.size() < 2) return false;
+        if (respuestas.size() < enunciados.size()) return false;
+        if (asociaciones.size() != enunciados.size()) return false;
+        if (puntos < 1) return false;
+        return descripcion != null && !descripcion.trim().isEmpty();
     }
 
-    // ---------------- Implementación IPregunta ----------------
-    @Override
-    public int obtenerPuntos() {
-        return puntos;
-    }
+    // -- Implementación de IPregunta --
 
     @Override
-    public String obtenerDescripcion() {
-        return descripcion;
-    }
+    public int obtenerPuntos() { return puntos; }
 
     @Override
-    public TipoPregunta getTipo() {
-        return TipoPregunta.PAREO;
-    }
+    public String obtenerDescripcion() { return descripcion; }
 
-    // ---------------- Getters básicos ----------------
-    public int getId() {
-        return id;
-    }
+    @Override
+    public TipoPregunta getTipo() { return TipoPregunta.PAREO; }
 
-    public List<String> getEnunciados() {
-        return Collections.unmodifiableList(enunciados);
-    }
+    // -- Getters y Setters --
 
-    public List<String> getRespuestas() {
-        return Collections.unmodifiableList(respuestas);
-    }
+    public int getId() { return id; }
 
-    public Map<Integer, Integer> getAsociaciones() {
-        return Collections.unmodifiableMap(asociaciones);
-    }
+    public List<String> getEnunciados() { return Collections.unmodifiableList(enunciados); }
 
-    public void setPuntos(int puntos) {
-        this.puntos = puntos;
-    }
+    public List<String> getRespuestas() { return Collections.unmodifiableList(respuestas); }
+
+    public Map<Integer, Integer> getAsociaciones() { return Collections.unmodifiableMap(asociaciones); }
+
+    public void setPuntos(int puntos) { this.puntos = puntos; }
 
     public void setDescripcion(String descripcion) {
         this.descripcion = (descripcion == null ? "" : descripcion.trim());
     }
 
+    // -- Representación --
+
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Pareo{");
-        sb.append("id=").append(id);
-        sb.append(", descripcion='").append(descripcion).append('\'');
-        sb.append(", puntos=").append(puntos);
-        sb.append(", enunciados=").append(enunciados.size());
-        sb.append(", respuestas=").append(respuestas.size());
-        sb.append(", asociaciones=").append(asociaciones.size());
-        sb.append('}');
-        return sb.toString();
+        return String.format("Pareo{id=%d, enunciados=%d, respuestas=%d, puntos=%d}",
+                id, enunciados.size(), respuestas.size(), puntos);
     }
 }

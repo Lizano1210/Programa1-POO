@@ -6,222 +6,205 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- Representa un grupo específico de un curso con fechas definidas, gestiona la matrícula
- de estudiantes y asignación de evaluaciones.
+ * Representa un grupo de un curso.
+ * <p>
+ * Cada grupo tiene un rango de fechas, un profesor asignado, una lista de estudiantes matriculados
+ * y las evaluaciones asociadas. Permite verificar capacidad, vigencia y gestionar matrículas.
+ * </p>
  */
 public class Grupo {
-    // Atributos
+
+    // -- Atributos --
+
+    /** Curso al que pertenece el grupo. */
     private Curso curso;
+
+    /** Identificador único del grupo. */
     private int idGrupo;
+
+    /** Fecha de inicio del grupo. */
     private LocalDate fechaInicio;
+
+    /** Fecha de finalización del grupo. */
     private LocalDate fechaFinal;
+
+    /** Profesor asignado al grupo. */
     private Profesor profesor;
+
+    /** Lista de matrículas del grupo. */
     private List<Matricula> matriculas;
+
+    /** Lista de evaluaciones asignadas al grupo. */
     private List<EvaluacionAsignada> evaluacionesAsignadas;
-    // Contador  para generar IDs únicos por curso
+
+    /** Contador interno para generar IDs únicos. */
     private static int contadorId = 0;
 
-    // Constructor
+    // -- Constructor --
+
+    /**
+     * Crea un nuevo grupo para un curso con fechas definidas.
+     *
+     * @param curso curso al que pertenece el grupo
+     * @param fechaInicio fecha de inicio del grupo
+     * @param fechaFinal fecha de finalización del grupo
+     */
     public Grupo(Curso curso, LocalDate fechaInicio, LocalDate fechaFinal) {
         this.curso = curso;
-        this.idGrupo = ++contadorId; // Genera ID automáticamente
+        this.idGrupo = ++contadorId;
         this.fechaInicio = fechaInicio;
         this.fechaFinal = fechaFinal;
-        this.profesor = null; // Se asigna después
+        this.profesor = null;
         this.matriculas = new ArrayList<>();
         this.evaluacionesAsignadas = new ArrayList<>();
     }
 
-    // Getters
-    public Curso getCurso() {
-        return curso;
-    }
-    public int getIdGrupo() {
-        return idGrupo;
-    }
-    public LocalDate getFechaInicio() {
-        return fechaInicio;
-    }
-    public LocalDate getFechaFinal() {
-        return fechaFinal;
-    }
-    public Profesor getProfesor() {
-        return profesor;
-    }
-    public List<Matricula> getMatriculas() {
-        return matriculas;
-    }
-    public List<EvaluacionAsignada> getEvaluacionesAsignadas() {
-        return evaluacionesAsignadas;
-    }
+    // -- Getters --
 
-    // Setters
-    public void setCurso(Curso curso) {
-        this.curso = curso;
-    }
-    public void setIdGrupo(int idGrupo) {
-        this.idGrupo = idGrupo;
-    }
-    public void setFechaInicio(LocalDate fechaInicio) {
-        this.fechaInicio = fechaInicio;
-    }
-    public void setFechaFinal(LocalDate fechaFinal) {
-        this.fechaFinal = fechaFinal;
-    }
-    public void setProfesor(Profesor profesor) {
-        this.profesor = profesor;
-    }
-    public void setEvaluacionesAsignadas(List<EvaluacionAsignada> nuevasEval) {
-        this.evaluacionesAsignadas = nuevasEval;
-    }
+    public Curso getCurso() { return curso; }
+    public int getIdGrupo() { return idGrupo; }
+    public LocalDate getFechaInicio() { return fechaInicio; }
+    public LocalDate getFechaFinal() { return fechaFinal; }
+    public Profesor getProfesor() { return profesor; }
+    public List<Matricula> getMatriculas() { return matriculas; }
+    public List<EvaluacionAsignada> getEvaluacionesAsignadas() { return evaluacionesAsignadas; }
 
-    // Métodos principales
+    // -- Setters --
+
+    public void setCurso(Curso curso) { this.curso = curso; }
+    public void setIdGrupo(int idGrupo) { this.idGrupo = idGrupo; }
+    public void setFechaInicio(LocalDate fechaInicio) { this.fechaInicio = fechaInicio; }
+    public void setFechaFinal(LocalDate fechaFinal) { this.fechaFinal = fechaFinal; }
+    public void setProfesor(Profesor profesor) { this.profesor = profesor; }
+    public void setEvaluacionesAsignadas(List<EvaluacionAsignada> nuevasEval) { this.evaluacionesAsignadas = nuevasEval; }
+    public void setMatriculas(List<Matricula> nuevaLista) { this.matriculas = nuevaLista; }
+
+    // -- Métodos principales --
 
     /**
-     * Agrega una matrícula (estudiante) al grupo.
-     * Valida que el grupo no esté lleno antes de agregar.
+     * Agrega una matrícula al grupo si tiene cupo disponible.
      *
-     * @param matricula La matrícula a agregar
-     * @return true si se agregó correctamente, false si el grupo está lleno
-     * @throws IllegalArgumentException si la matrícula es null
+     * @param matricula matrícula a agregar
+     * @return {@code true} si se agregó correctamente, {@code false} si el grupo está lleno o no corresponde
+     * @throws IllegalArgumentException si la matrícula es {@code null}
      */
     public boolean agregarMatricula(Matricula matricula) {
-        if (matricula == null) {
-            throw new IllegalArgumentException("La matrícula no puede ser null");
-        }
+        if (matricula == null) throw new IllegalArgumentException("La matrícula no puede ser null");
 
-        // Verificar si el grupo está lleno
         if (!validarCapacidad()) {
-            System.out.println("No se puede agregar: El grupo está lleno");
+            System.out.println("No se puede agregar: el grupo está lleno.");
             return false;
         }
 
-        // Verificar que la matrícula sea para este grupo
         if (matricula.getGrupo() != this) {
-            System.out.println("Error: La matrícula no corresponde a este grupo");
+            System.out.println("Error: la matrícula no corresponde a este grupo.");
             return false;
         }
 
-        // Agregar la matrícula
         matriculas.add(matricula);
-        System.out.println("Matrícula agregada exitosamente. Total estudiantes: " + matriculas.size());
+        System.out.println("Matrícula agregada. Total estudiantes: " + matriculas.size());
         return true;
     }
 
     /**
-     * Verifica si el grupo tiene capacidad disponible.
+     * Verifica si el grupo tiene espacio disponible según el máximo de estudiantes del curso.
      *
-     * @return true si hay espacio disponible, false si está lleno
+     * @return {@code true} si hay cupo disponible, {@code false} si está lleno
      */
     public boolean validarCapacidad() {
         int maxEstudiantes = curso.getMaxEstu();
-        int estudiantesActuales = matriculas.size();
-
-        return estudiantesActuales < maxEstudiantes;
+        return matriculas.size() < maxEstudiantes;
     }
 
     /**
-     * Obtiene la cantidad de cupos disponibles en el grupo.
+     * Calcula cuántos cupos quedan disponibles en el grupo.
      *
-     * @return Número de cupos disponibles
+     * @return cantidad de cupos libres
      */
     public int obtenerCuposDisponibles() {
         return curso.getMaxEstu() - matriculas.size();
     }
 
     /**
-     * Verifica si el grupo puede abrirse (tiene el mínimo de estudiantes).
+     * Indica si el grupo puede abrirse según el mínimo de estudiantes requerido.
      *
-     * @return true si tiene al menos el mínimo de estudiantes, false en caso contrario
+     * @return {@code true} si cumple el mínimo, {@code false} en caso contrario
      */
     public boolean puedeAbrirse() {
-        int minEstudiantes = curso.getMinEstu();
-        int estudiantesActuales = matriculas.size();
-
-        return estudiantesActuales >= minEstudiantes;
+        return matriculas.size() >= curso.getMinEstu();
     }
 
+    // -- Estado del grupo --
+
     /**
-     * Valida si el grupo está vigente en una fecha específica.
-     * Un grupo es vigente si la fecha dada es menor o igual a su fecha de finalización.
+     * Indica si el grupo está vigente en una fecha específica.
      *
-     * @param fecha La fecha a verificar
-     * @return true si el grupo está vigente en esa fecha, false en caso contrario
+     * @param fecha fecha a verificar
+     * @return {@code true} si está vigente en esa fecha
      */
     public boolean esVigente(LocalDate fecha) {
-        if (fecha == null) {
-            throw new IllegalArgumentException("La fecha no puede ser null");
-        }
-
-        // El grupo es vigente si la fecha de finalización es >= a la fecha dada
+        if (fecha == null) throw new IllegalArgumentException("La fecha no puede ser null");
         return fechaFinal.isAfter(fecha) || fechaFinal.isEqual(fecha);
     }
 
     /**
-     * Verifica si el grupo está actualmente vigente (usando la fecha del sistema).
+     * Indica si el grupo está vigente hoy (fecha actual).
      *
-     * @return true si el grupo está vigente hoy, false en caso contrario
+     * @return {@code true} si el grupo sigue vigente
      */
     public boolean esVigenteHoy() {
         return esVigente(LocalDate.now());
     }
 
     /**
-     * Verifica si el grupo ya ha iniciado.
+     * Verifica si el grupo ya ha iniciado según la fecha actual.
      *
-     * @return true si la fecha actual es >= a la fecha de inicio
+     * @return {@code true} si ya comenzó
      */
     public boolean haIniciado() {
         LocalDate hoy = LocalDate.now();
         return hoy.isAfter(fechaInicio) || hoy.isEqual(fechaInicio);
     }
 
+    // -- Evaluaciones --
+
     /**
      * Asocia una evaluación al grupo con una fecha y hora de inicio específica.
      *
-     * @param evaluacion La evaluación a asignar
-     * @param fechaHoraInicio Fecha y hora en que inicia la evaluación
-     * @return true si se asignó correctamente, false en caso contrario
+     * @param evaluacion evaluación a asignar
+     * @param fechaHoraInicio fecha y hora de inicio
+     * @return {@code true} si se asignó correctamente
      */
     public boolean asignarEvaluacion(Evaluacion evaluacion, LocalDateTime fechaHoraInicio) {
-        if (evaluacion == null) {
-            throw new IllegalArgumentException("La evaluación no puede ser null");
-        }
+        if (evaluacion == null) throw new IllegalArgumentException("La evaluación no puede ser null");
+        if (fechaHoraInicio == null) throw new IllegalArgumentException("La fecha y hora no pueden ser null");
 
-        if (fechaHoraInicio == null) {
-            throw new IllegalArgumentException("La fecha y hora de inicio no pueden ser null");
-        }
-
-        // TODO: Cuando se implemente EvaluacionAsignada, descomentar esto:
+        // TODO: Cuando se implemente EvaluacionAsignada, habilitar esta parte:
         /*
-        // Crear la evaluación asignada
-        EvaluacionAsignada evaluacionAsignada = new EvaluacionAsignada(evaluacion, this, fechaHoraInicio);
-
-        // Agregar a la lista
-        evaluacionesAsignadas.add(evaluacionAsignada);
-
+        EvaluacionAsignada ea = new EvaluacionAsignada(evaluacion, this, fechaHoraInicio);
+        evaluacionesAsignadas.add(ea);
         System.out.println("Evaluación asignada exitosamente al grupo " + idGrupo);
         return true;
         */
-
-        // Por ahora, solo un placeholder
-        System.out.println("Método asignarEvaluacion: pendiente de implementar EvaluacionAsignada");
+        System.out.println("Método asignarEvaluacion: pendiente de implementación EvaluacionAsignada");
         return false;
     }
 
     /**
-     * Obtiene todas las evaluaciones asignadas al grupo.
+     * Obtiene una copia de las evaluaciones asignadas al grupo.
      *
-     * @return Lista de evaluaciones asignadas (puede estar vacía)
+     * @return lista de evaluaciones asignadas
      */
     public List<EvaluacionAsignada> obtenerEvaluacionesAsignadas() {
-        return new ArrayList<>(evaluacionesAsignadas); // Retorna copia
+        return new ArrayList<>(evaluacionesAsignadas);
     }
 
+    // -- Consultas sobre estudiantes --
+
     /**
-     * Obtiene la cantidad de estudiantes matriculados en el grupo.
+     * Devuelve la cantidad actual de estudiantes matriculados.
      *
-     * @return Número de estudiantes matriculados
+     * @return número de estudiantes en el grupo
      */
     public int obtenerCantidadEstudiantes() {
         return matriculas.size();
@@ -230,19 +213,40 @@ public class Grupo {
     /**
      * Busca una matrícula por el ID del estudiante.
      *
-     * @param idEstudiante ID del estudiante a buscar
-     * @return La matrícula encontrada, o null si no existe
+     * @param idEstudiante identificador del estudiante
+     * @return matrícula correspondiente, o {@code null} si no existe
      */
     public Matricula buscarMatriculaPorEstudiante(String idEstudiante) {
         for (Matricula m : matriculas) {
-            if (m.getEstudiante().getIdUsuario().equals(idEstudiante)) {
-                return m;
-            }
+            if (m.getEstudiante().getIdUsuario().equals(idEstudiante)) return m;
         }
         return null;
     }
 
-    // toString
+    // -- Validaciones y utilidades --
+
+    /**
+     * Verifica que los datos del grupo sean válidos.
+     *
+     * @return {@code true} si todos los datos son correctos
+     */
+    public boolean validarDatos() {
+        if (curso == null || idGrupo < 1 || fechaInicio == null || fechaFinal == null) return false;
+        return fechaFinal.isAfter(fechaInicio);
+    }
+
+    /** Reinicia el contador de IDs del grupo (útil para pruebas). */
+    public static void reiniciarContador() { contadorId = 0; }
+
+    /**
+     * Define manualmente el contador de IDs (para restaurar desde datos guardados).
+     *
+     * @param valor nuevo valor del contador
+     */
+    public static void setContador(int valor) { contadorId = valor; }
+
+    // -- Representación --
+
     @Override
     public String toString() {
         return String.format("Grupo %d \nCurso: %s \n%s a %s \nProfesor: %s \nEstudiantes: %d/%d \nEstado: %s",
@@ -254,43 +258,5 @@ public class Grupo {
                 matriculas.size(),
                 curso.getMaxEstu(),
                 esVigenteHoy() ? "Vigente" : "Finalizado");
-    }
-
-    /**
-     * Valida que los datos del grupo sean correctos.
-     *
-     * @return true si todos los datos son válidos, false en caso contrario
-     */
-    public boolean validarDatos() {
-        if (curso == null) return false;
-        if (idGrupo < 1) return false;
-        if (fechaInicio == null || fechaFinal == null) return false;
-
-        // La fecha final debe ser después de la fecha de inicio
-        if (fechaFinal.isBefore(fechaInicio) || fechaFinal.isEqual(fechaInicio)) {
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Reinicia el contador de IDs (útil para testing o al cargar datos).
-     */
-    public static void reiniciarContador() {
-        contadorId = 0;
-    }
-
-    /**
-     * Establece el contador en un valor específico (útil al cargar datos).
-     *
-     * @param valor El valor inicial del contador
-     */
-    public static void setContador(int valor) {
-        contadorId = valor;
-    }
-
-    public void setMatriculas(List<Matricula> nuevaLista) {
-        this.matriculas = nuevaLista;
     }
 }

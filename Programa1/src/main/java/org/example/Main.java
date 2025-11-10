@@ -1,19 +1,32 @@
 package org.example;
 
-/* Programa 1 | POO Segundo Semestre 2025
-Elaborado por: Elías Lizano Valerio y Giancarlo Artavia Chavez
-Fecha de creación: 10/10/2025
+/**
+ * Clase principal del programa.
+ * <p>
+ * Punto de entrada de la aplicación. Crea y muestra la ventana principal del sistema,
+ * estableciendo su comportamiento de cierre.
+ * </p>
+ *
+ * <p>
+ * Elaborado por: <b>Elías Lizano Valerio</b> y <b>Giancarlo Artavia Chávez</b><br>
+ * Fecha de creación: 10/10/2025
+ * </p>
  */
-
-// Imports
-import  javax.swing.JFrame;
-import java.awt.*;
-
 public class Main {
-    public static void main(String[] args) {
-        Ventana main = new  Ventana();
-        main.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        main.setVisible(true);
-        }
-    }
 
+    // -- Método principal --
+
+    /**
+     * Método principal del programa.
+     * <p>
+     * Inicializa la aplicación gráfica y muestra la ventana principal del sistema.
+     * </p>
+     *
+     * @param args argumentos de línea de comandos (no utilizados)
+     */
+    public static void main(String[] args) {
+        Ventana main = new Ventana();
+        main.setDefaultCloseOperation(javax.swing.JFrame.EXIT_ON_CLOSE);
+        main.setVisible(true);
+    }
+}

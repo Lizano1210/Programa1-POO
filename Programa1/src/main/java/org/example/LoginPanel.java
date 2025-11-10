@@ -5,23 +5,44 @@ import java.awt.*;
 import java.util.function.BiConsumer;
 
 /**
- Panel de login con identificación y contraseña.
+ * Panel gráfico de inicio de sesión.
+ * <p>
+ * Permite al usuario ingresar su identificación y contraseña, con opción para mostrar/ocultar la contraseña.
+ * Incluye botones para iniciar sesión y recuperar contraseña, con callbacks configurables
+ * para manejar las acciones correspondientes.
+ * </p>
  */
 public class LoginPanel extends JPanel {
-    // Componentes
+
+    // -- Componentes principales --
+
     private final JTextField txtIdentificacion = new JTextField(18);
     private final JPasswordField pwdContrasena = new JPasswordField(18);
     private final JButton btnIngresar = new JButton("Ingresar");
     private final JButton btnRecuperar = new JButton("Olvidé mi contraseña");
     private final JCheckBox chkMostrar = new JCheckBox("Mostrar");
     private final JLabel lblMensaje = new JLabel(" ");
-    private final char echoDefault; // para tapar contraseña
 
-    // callbacks que usamos para validar lo que ingrese el usuario
+    /** Caracter usado para ocultar la contraseña (por defecto). */
+    private final char echoDefault;
+
+    // -- Callbacks externos --
+
+    /** Acción a ejecutar al intentar iniciar sesión. */
     private BiConsumer<String, char[]> onLogin;
+
+    /** Acción a ejecutar al solicitar recuperación de contraseña. */
     private java.util.function.Consumer<String> onRecover;
 
-    /** Construye el formulario de login. */
+    // -- Constructor --
+
+    /**
+     * Crea el formulario de inicio de sesión con todos sus componentes.
+     * <p>
+     * Organiza los elementos en una cuadrícula, asignando posiciones y configurando los botones,
+     * el campo de contraseña y el checkbox para mostrar/ocultar caracteres.
+     * </p>
+     */
     public LoginPanel() {
         setLayout(new GridBagLayout());
         GridBagConstraints c = new GridBagConstraints();
@@ -31,11 +52,11 @@ public class LoginPanel extends JPanel {
         JLabel title = new JLabel("Iniciar sesión");
         title.setFont(title.getFont().deriveFont(Font.BOLD, 20f));
 
-        // Fila 0: título
+        // -- Fila 0: título --
         c.gridx = 0; c.gridy = 0; c.gridwidth = 3;
         add(title, c);
 
-        // Fila 1: identificación
+        // -- Fila 1: identificación --
         c.gridwidth = 1; c.weightx = 0;
         JLabel lblId = new JLabel("Identificación");
         c.gridx = 0; c.gridy = 1;
@@ -47,7 +68,7 @@ public class LoginPanel extends JPanel {
         c.gridx = 2; c.gridy = 1; c.weightx = 0;
         add(Box.createHorizontalStrut(1), c);
 
-        // Fila 2: contraseña + mostrar
+        // -- Fila 2: contraseña y checkbox --
         JLabel lblPass = new JLabel("Contraseña");
         c.gridx = 0; c.gridy = 2; c.weightx = 0;
         add(lblPass, c);
@@ -58,44 +79,53 @@ public class LoginPanel extends JPanel {
         c.gridx = 2; c.gridy = 2; c.weightx = 0;
         add(chkMostrar, c);
 
-        // Fila 3: ingresar
-        c.gridx = 1; c.gridy = 3; c.gridwidth = 1; c.weightx = 0;
+        // -- Fila 3: botón ingresar --
+        c.gridx = 1; c.gridy = 3; c.gridwidth = 1;
         add(btnIngresar, c);
 
-        // Fila 4: recuperar
+        // -- Fila 4: botón recuperar contraseña --
         c.gridx = 1; c.gridy = 4;
         add(btnRecuperar, c);
 
-        // Fila 5: mensajes
+        // -- Fila 5: mensajes --
         c.gridx = 0; c.gridy = 5; c.gridwidth = 3;
         lblMensaje.setForeground(new Color(180, 0, 0));
         add(lblMensaje, c);
 
-        // Guardar el echo char original
+        // Guardar el carácter por defecto de ocultamiento
         this.echoDefault = pwdContrasena.getEchoChar();
 
-        // Toggle mostrar/ocultar contraseña
+        // Mostrar u ocultar contraseña
         chkMostrar.addActionListener(e ->
                 pwdContrasena.setEchoChar(chkMostrar.isSelected() ? (char) 0 : echoDefault));
 
-        // Botones
+        // Acciones de los botones
         btnIngresar.addActionListener(e -> intentarLogin());
         btnRecuperar.addActionListener(e -> {
             if (onRecover != null) onRecover.accept(txtIdentificacion.getText().trim());
         });
     }
 
-    // callback que se asigna al ingresar
+    // -- Configuración de callbacks --
+
+    /** Define la acción a ejecutar al hacer clic en “Ingresar”. */
     public void setOnLogin(BiConsumer<String, char[]> onLogin) { this.onLogin = onLogin; }
 
-    // callback que se activa al recuperar contraseña
+    /** Define la acción a ejecutar al hacer clic en “Olvidé mi contraseña”. */
     public void setOnRecover(java.util.function.Consumer<String> onRecover) { this.onRecover = onRecover; }
 
-    // muestra los mensajes de error
+    // -- Utilidades --
+
+    /** Muestra un mensaje informativo o de error en la interfaz. */
     public void setMensaje(String msg) { lblMensaje.setText(msg == null ? " " : msg); }
 
+    /**
+     * Intenta validar los datos ingresados y ejecutar la acción de inicio de sesión.
+     * <p>
+     * Si los campos están vacíos, muestra mensajes de error localmente sin llamar al callback.
+     * </p>
+     */
     private void intentarLogin() {
-        // Validación local antes de delegar
         String id = txtIdentificacion.getText().trim();
         char[] pass = pwdContrasena.getPassword();
 
@@ -114,7 +144,6 @@ public class LoginPanel extends JPanel {
             try {
                 onLogin.accept(id, pass);
             } catch (IllegalArgumentException ex) {
-                // Errores mostrados al usuario
                 setMensaje(ex.getMessage() == null ? "Datos inválidos." : ex.getMessage());
             } catch (Exception ex) {
                 setMensaje("Ocurrió un error al iniciar sesión.");
@@ -122,5 +151,6 @@ public class LoginPanel extends JPanel {
         }
     }
 }
+
 
 

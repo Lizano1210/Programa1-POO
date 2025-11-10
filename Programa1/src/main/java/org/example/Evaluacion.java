@@ -5,31 +5,77 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 /**
- * Define una evaluación con preguntas, duración y reglas de aleatoriedad.
+ * Representa una evaluación que contiene preguntas, duración y configuración
+ * de aleatoriedad en preguntas y opciones.
+ * <p>
+ * Permite gestionar preguntas, calcular puntajes, validar datos y controlar
+ * su asociación con grupos de aplicación.
+ * </p>
  */
 public class Evaluacion {
-    // Atributos
-    static int contador = 1;           // Para no repetir id    
+
+    // -- Atributos --
+
+    /** Contador interno para generar IDs únicos. */
+    static int contador = 1;
+
+    /** Identificador de la evaluación. */
     int id;
+
+    /** Nombre de la evaluación (5–20 caracteres). */
     String nombre;
+
+    /** Instrucciones visibles para el estudiante (5–400 caracteres). */
     String instrucciones;
+
+    /** Lista de objetivos del aprendizaje (cada uno de 10–40 caracteres). */
     List<String> objetivos = new ArrayList<>();
+
+    /** Duración total de la evaluación en minutos (mínimo 1). */
     int duracionMinutos;
+
+    /** Indica si el orden de las preguntas se mostrará de forma aleatoria. */
     boolean preguntasAleatorias;
+
+    /** Indica si el orden de las opciones dentro de las preguntas será aleatorio. */
     boolean opcionesAleatorias;
+
+    /** Lista de preguntas incluidas en la evaluación. */
     List<IPregunta> preguntas = new ArrayList<>();
+
+    /** Puntaje total calculado automáticamente según las preguntas. */
     int puntajeTotal;
+
+    /** Grupos con los que la evaluación está asociada. */
     List<EvaluacionAsignada> gruposAsociados = new ArrayList<>();
 
-    // Constructor
+    // -- Constructor --
+
+    /**
+     * Crea una nueva evaluación con los parámetros especificados.
+     *
+     * @param nombre nombre de la evaluación
+     * @param instrucciones texto con las instrucciones
+     * @param objetivos lista de objetivos de aprendizaje
+     * @param duracionMinutos duración total en minutos
+     * @param preguntasAleatorias si las preguntas deben mostrarse en orden aleatorio
+     * @param opcionesAleatorias si las opciones de respuesta deben mostrarse en orden aleatorio
+     */
     public Evaluacion(String nombre, String instrucciones, List<String> objetivos, int duracionMinutos,
                       boolean preguntasAleatorias, boolean opcionesAleatorias) {
         this.id = contador++;
         validarDatos(nombre, instrucciones, objetivos, duracionMinutos, preguntasAleatorias, opcionesAleatorias);
-        calcularPuntajeTotal(); // arranca en 0
+        calcularPuntajeTotal(); // inicia con 0
     }
 
-    // Valida y añade una pregunta
+    // -- Gestión de preguntas --
+
+    /**
+     * Agrega una nueva pregunta a la evaluación.
+     *
+     * @param p pregunta a agregar
+     * @return {@code true} si se agregó correctamente
+     */
     public boolean agregarPregunta(IPregunta p) {
         if (p == null) {
             System.out.println("La pregunta no puede ser nula.");
@@ -44,18 +90,25 @@ public class Evaluacion {
         return true;
     }
 
+    /**
+     * Calcula y actualiza el puntaje total de la evaluación.
+     *
+     * @return puntaje total
+     */
     public int calcularPuntajeTotal() {
         int suma = 0;
         for (IPregunta p : preguntas) {
-            if (p != null) {suma += Math.max(0, p.obtenerPuntos());}
+            if (p != null) suma += Math.max(0, p.obtenerPuntos());
         }
         this.puntajeTotal = suma;
         return this.puntajeTotal;
     }
 
     /**
-     * Devuelve el orden de preguntas a mostrar.
-     * Si preguntasAleatorias=true, retorna una copia mezclada; si no, el orden natural.
+     * Genera el orden de preguntas según la configuración de aleatoriedad.
+     *
+     * @param rng instancia opcional de {@link Random} para mezclar
+     * @return lista de preguntas en el orden correspondiente
      */
     public List<IPregunta> generarOrdenPreguntas(Random rng) {
         List<IPregunta> orden = new ArrayList<>(preguntas);
@@ -65,7 +118,14 @@ public class Evaluacion {
         return orden;
     }
 
-    /** Valida y asigna los datos base de la evaluación. */
+    // -- Validaciones --
+
+    /**
+     * Valida y asigna los datos base de la evaluación.
+     *
+     * @return {@code true} si los datos son válidos
+     * @throws IllegalArgumentException si alguno de los valores no cumple las reglas
+     */
     public boolean validarDatos(String nombre, String instrucciones, List<String> objetivos, int duracionMinutos,
                                 boolean preguntasAleatorias, boolean opcionesAleatorias) {
         // nombre 5-20
@@ -98,9 +158,16 @@ public class Evaluacion {
         return true;
     }
 
+    // -- Restricciones y estado --
+
     /**
-     * Retorna false si la evaluación está asociada a algún grupo VIGENTE para la fecha dada.
-     * (Atajo práctico a partir de la definición de vigencia de grupos en reportes).
+     * Verifica si la evaluación puede modificarse en una fecha determinada.
+     * <p>
+     * No se permite modificar si está asociada a algún grupo vigente en la fecha indicada.
+     * </p>
+     *
+     * @param fechaReferencia fecha de referencia (si es {@code null}, usa la fecha actual)
+     * @return {@code true} si puede modificarse
      */
     public boolean canModificar(LocalDate fechaReferencia) {
         if (gruposAsociados == null || gruposAsociados.isEmpty()) return true;
@@ -108,18 +175,28 @@ public class Evaluacion {
         for (EvaluacionAsignada ea : gruposAsociados) {
             if (ea == null || ea.grupo == null) continue;
             if (ea.grupo.getFechaFinal() != null && !ea.grupo.getFechaFinal().isBefore(fechaReferencia)) {
-                return false; // hay al menos un grupo vigente NO se puede modificar
+                return false; // grupo vigente: no se puede modificar
             }
         }
         return true;
     }
 
+    /**
+     * Indica si una evaluación puede desasociarse de un grupo antes de que comience.
+     *
+     * @param asignacion evaluación asignada a un grupo
+     * @return {@code true} si puede desasociarse
+     */
     public boolean canDesasociar(EvaluacionAsignada asignacion) {
         if (asignacion == null || asignacion.fechaHoraInicio == null) return false;
         return asignacion.fechaHoraInicio.isAfter(LocalDateTime.now());
     }
 
-    /** Versión agregada: true si TODAS las asociaciones pueden desasociarse "hoy". */
+    /**
+     * Versión agregada: indica si todas las asociaciones pueden desasociarse hoy.
+     *
+     * @return {@code true} si todas las asociaciones son eliminables
+     */
     public boolean canDesasociar() {
         if (gruposAsociados == null || gruposAsociados.isEmpty()) return true;
         LocalDateTime now = LocalDateTime.now();
@@ -130,7 +207,8 @@ public class Evaluacion {
         return true;
     }
 
-    // Getters
+    // -- Getters y Setters --
+
     public int getId() { return id; }
     public String getNombre() { return nombre; }
     public String getInstrucciones() { return instrucciones; }
@@ -142,10 +220,7 @@ public class Evaluacion {
     public int getPuntajeTotal() { return puntajeTotal; }
     public List<EvaluacionAsignada> getGruposAsociados() { return Collections.unmodifiableList(gruposAsociados); }
 
-    // Setters
-    public void setId(int id) {
-        this.id = id;
-    }
+    public void setId(int id) { this.id = id; }
 
     public void setNombre(String nombre) {
         if (nombre == null || nombre.trim().length() < 5 || nombre.trim().length() > 20)
@@ -187,35 +262,37 @@ public class Evaluacion {
     }
 
     public void setPreguntas(List<IPregunta> preguntas) {
-        if (preguntas == null) {
-            this.preguntas = new ArrayList<>();
-        } else {
-            this.preguntas = new ArrayList<>(preguntas);
-        }
+        this.preguntas = preguntas == null ? new ArrayList<>() : new ArrayList<>(preguntas);
         calcularPuntajeTotal();
     }
 
-    public void setPuntajeTotal(int puntajeTotal) {
-        this.puntajeTotal = puntajeTotal;
-    }
+    public void setPuntajeTotal(int puntajeTotal) { this.puntajeTotal = puntajeTotal; }
 
     public void setGruposAsociados(List<EvaluacionAsignada> gruposAsociados) {
-        if (gruposAsociados == null) {
-            this.gruposAsociados = new ArrayList<>();
-        } else {
-            this.gruposAsociados = new ArrayList<>(gruposAsociados);
-        }
+        this.gruposAsociados = gruposAsociados == null ? new ArrayList<>() : new ArrayList<>(gruposAsociados);
     }
 
-    // Auxiliares
+    // -- Auxiliares --
+
+    /**
+     * Cambia el orden de una pregunta dentro de la lista.
+     *
+     * @param from posición original
+     * @param to posición destino
+     */
     public void moverPregunta(int from, int to) {
         if (preguntas == null) return;
         int n = preguntas.size();
         if (from < 0 || to < 0 || from >= n || to >= n || from == to) return;
-        java.util.Collections.swap(preguntas, from, to);
+        Collections.swap(preguntas, from, to);
         calcularPuntajeTotal();
     }
 
+    /**
+     * Elimina una pregunta por su índice.
+     *
+     * @param idx índice de la pregunta a eliminar
+     */
     public void eliminarPregunta(int idx) {
         if (preguntas == null) return;
         if (idx < 0 || idx >= preguntas.size()) return;
@@ -223,8 +300,8 @@ public class Evaluacion {
         calcularPuntajeTotal();
     }
 
-
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return "Evaluación{" +
                 "id=" + id +
                 ", nombre='" + nombre + '\'' +
