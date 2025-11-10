@@ -128,6 +128,7 @@ public class AdminGruposDialog extends JDialog {
         if (elegido != null) {
             try {
                 cursoService.asignarProfesor(curso, g.getIdGrupo(), elegido);
+                elegido.getGrupos().add(g);
                 refrescar();
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);

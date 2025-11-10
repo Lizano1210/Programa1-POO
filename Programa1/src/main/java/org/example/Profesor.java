@@ -49,9 +49,13 @@ public class Profesor extends Usuario {
         return grupos;
     }
 
+    public  void  setGrupos(ArrayList<Grupo> nGrupos) { this.grupos = nGrupos;}
+
     public List<Evaluacion> getEvaluaciones() {
         return evaluaciones;
     }
+
+    public void setEvaluaciones(ArrayList<Evaluacion> nuevasEval) {this.evaluaciones = nuevasEval;}
 
     // Setters
     public void setTituOb(List<String> tituOb) {
@@ -141,18 +145,13 @@ public class Profesor extends Usuario {
     public Evaluacion crearEvaluacion(String nombre, String instrucciones,
                                       List<String> objetivos, int duracionMinutos,
                                       boolean preguntasAleatorias, boolean opcionesAleatorias) {
-        // TODO: Cuando se implemente Evaluacion, descomentar:
-        /*
+
         Evaluacion nuevaEvaluacion = new Evaluacion(nombre, instrucciones, objetivos,
                                                      duracionMinutos, preguntasAleatorias,
                                                      opcionesAleatorias);
         evaluaciones.add(nuevaEvaluacion);
         System.out.println("Evaluación creada exitosamente: " + nombre);
         return nuevaEvaluacion;
-        */
-
-        System.out.println("Método crearEvaluacion: pendiente de implementar clase Evaluacion");
-        return null;
     }
 
     /**
@@ -179,15 +178,12 @@ public class Profesor extends Usuario {
 
         List<Evaluacion> evaluacionesDelGrupo = new ArrayList<>();
 
-        // TODO: Cuando se implemente EvaluacionAsignada, descomentar:
-        /*
+
         for (EvaluacionAsignada ea : grupo.getEvaluacionesAsignadas()) {
             if (evaluaciones.contains(ea.getEvaluacion())) {
                 evaluacionesDelGrupo.add(ea.getEvaluacion());
             }
         }
-        */
-
         return evaluacionesDelGrupo;
     }
 
@@ -289,7 +285,7 @@ public class Profesor extends Usuario {
         );
     }
 
-    // Método auxiliar para que se vean bien bonitas las listas
+    // Métodito auxiliar para que se vean bien bonitas las listas
     private String mostrarListaConIndentacion(List<String> lista, String prefijo) {
         if (lista.isEmpty()) {
             return prefijo + "(ninguno)\n";

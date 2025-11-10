@@ -19,9 +19,8 @@ public class Estudiante extends Usuario {
         setTemIN(temIN);
     }
 
-    // -------------------------
+
     // Getters y Setters
-    // -------------------------
 
     public String getOrgDL() {
         return orgDL;
@@ -54,9 +53,8 @@ public class Estudiante extends Usuario {
         }
     }
 
-    // -------------------------
-    // Métodos específicos
-    // -------------------------
+
+    // Métodos
 
     /** 
      * Agrega una matrícula asociada al grupo indicado.
@@ -75,5 +73,9 @@ public class Estudiante extends Usuario {
      */
     public List<Matricula> obtenerMatriculas() {
         return Collections.unmodifiableList(matriculas);
+    }
+
+    public void setMatriculas(List<Matricula> matriculas) {
+        this.matriculas = matriculas;
     }
 }

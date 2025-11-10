@@ -22,7 +22,7 @@ public class UsuarioServiceMem implements UsuarioService {
     public void seedDemo() {
         //admin
         Password pwAdmin = new Password("admin", "", false);
-        pwAdmin.encriptar("password");
+        pwAdmin.encriptar("secret");
         auth.upsertUsuario("admin", "admin@demo.com", Roles.ADMIN, pwAdmin);
 
         // estudiantes
@@ -46,9 +46,15 @@ public class UsuarioServiceMem implements UsuarioService {
         agregarEstudiante(e3);
 
         // registramos credenciales de testeo
-        auth.upsertUsuario(e1.getIdUsuario(), e1.getCorreo(), Roles.ESTUDIANTE, new Password(e1.getIdUsuario(), "secret", false));
-        auth.upsertUsuario(e2.getIdUsuario(), e2.getCorreo(), Roles.ESTUDIANTE, new Password(e2.getIdUsuario(), "secret", false));
-        auth.upsertUsuario(e3.getIdUsuario(), e3.getCorreo(), Roles.ESTUDIANTE, new Password(e3.getIdUsuario(), "secret", false));
+        Password pEst1 = new Password(e1.getIdUsuario(), "secret", false);
+        pEst1.encriptar("secret");
+        auth.upsertUsuario(e1.getIdUsuario(), e1.getCorreo(), Roles.ESTUDIANTE, pEst1);
+        Password pEst2 = new Password(e1.getIdUsuario(), "secret", false);
+        pEst2.encriptar("secret");
+        auth.upsertUsuario(e2.getIdUsuario(), e2.getCorreo(), Roles.ESTUDIANTE, pEst2);
+        Password pEst3 = new Password(e1.getIdUsuario(), "secret", false);
+        pEst3.encriptar("secret");
+        auth.upsertUsuario(e3.getIdUsuario(), e3.getCorreo(), Roles.ESTUDIANTE, pEst3);
 
         // profes
         Profesor p1 = new Profesor(
@@ -62,9 +68,12 @@ public class UsuarioServiceMem implements UsuarioService {
         agregarProfesor(p1);
         agregarProfesor(p2);
 
-        // Registrar en Autenticacion (password inicial "secret", NO temporal)
-        auth.upsertUsuario(p1.getIdUsuario(), p1.getCorreo(), Roles.PROFESOR, new Password(p1.getIdUsuario(), "secret", false));
-        auth.upsertUsuario(p2.getIdUsuario(), p2.getCorreo(), Roles.PROFESOR, new Password(p2.getIdUsuario(), "secret", false));
+        Password pPro1 = new Password(p1.getIdUsuario(), "secret", false);
+        pPro1.encriptar("secret");
+        auth.upsertUsuario(p1.getIdUsuario(), p1.getCorreo(), Roles.PROFESOR, pPro1);
+        Password pPro2 = new Password(p2.getIdUsuario(), "secret", false);
+        pPro2.encriptar("secret");
+        auth.upsertUsuario(p2.getIdUsuario(), p2.getCorreo(), Roles.PROFESOR, pPro2);
     }
 
     // listas

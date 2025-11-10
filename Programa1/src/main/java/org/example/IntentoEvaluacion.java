@@ -21,23 +21,33 @@ public class IntentoEvaluacion {
     int puntajeObtenido;   // suma de puntos
     double calificacion;   // (puntajeObtenido / puntajeTotal) * 100
 
-    public IntentoEvaluacion(Estudiante estudiante, Evaluacion evaluacion, Grupo grupo,
-                             LocalDateTime fechaHoraInicio) {
+    public IntentoEvaluacion(Estudiante estudiante,
+                             Evaluacion evaluacion,
+                             Grupo grupo,
+                             LocalDateTime fechaHoraInicio,
+                             LocalDateTime fechaHoraFinal,
+                             List<RespuestaEstudiante> respuestasEstudiante,
+                             int puntajeObtenido,
+                             double calificacion,
+                             List<Integer> ordenPreguntasUsado) {
         this.estudiante = estudiante;
         this.evaluacion = evaluacion;
         this.grupo = grupo;
         this.fechaHoraInicio = fechaHoraInicio;
+        this.fechaHoraFinal = fechaHoraFinal;
+
+        // Clonar defensivamente las colecciones recibidas
+        this.respuestasEstudiante = new ArrayList<>();
+        if (respuestasEstudiante != null) {
+            this.respuestasEstudiante.addAll(respuestasEstudiante);
+        }
+
+        this.puntajeObtenido = puntajeObtenido;
+        this.calificacion = calificacion;
+
+        setOrdenPreguntasUsado(ordenPreguntasUsado); // ya tienes este setter defensivo
     }
 
-    /** Agrega una respuesta del estudiante al intento. */
-    public boolean agregarRespuesta(RespuestaEstudiante r) {
-        if (r == null || r.getPregunta() == null) {
-            System.out.println("Respuesta inválida.");
-            return false;
-        }
-        respuestasEstudiante.add(r);
-        return true;
-    }
 
     /**
      Calcula el puntaje total y la calificación (0..100).

@@ -29,4 +29,7 @@ public interface ReporteService {
 
     /** Genera estadística de matrícula (TXT/CSV) según vigencia y alcance; retorna ruta del archivo. */
     Path generarEstadisticaMatricula(LocalDate fechaVigencia, Scope scope) throws Exception;
+
+    boolean exportarIntento(IntentoEvaluacion intento, java.io.File destino);
+
 }

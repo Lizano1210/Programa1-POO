@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -26,7 +27,6 @@ public class ReporteServicePdf implements ReporteService {
     private final CursoService cursoService;
     private final UsuarioService usuarioService;
 
-    // Fuentes como constantes
     private static final PDType1Font HELVETICA = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
     private static final PDType1Font HELVETICA_BOLD = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
 
@@ -35,11 +35,8 @@ public class ReporteServicePdf implements ReporteService {
         this.usuarioService = usuarioService;
     }
 
-    // ──────────────────────────── API ────────────────────────────
-
     @Override
     public Path generarListaEstudiantes(LocalDate fechaVigencia, Scope scope) throws Exception {
-        // Recopilar datos
         List<ItemAlumno> alumnos = recolectarAlumnos(fechaVigencia, scope);
         alumnos.sort(Comparator
                 .comparing((ItemAlumno it) -> safe(it.est.getApellido1()))
@@ -47,28 +44,23 @@ public class ReporteServicePdf implements ReporteService {
                 .thenComparing(it -> safe(it.est.getApellido2()))
         );
 
-        // Salida
         Path out = outPath("lista_estudiantes", fechaVigencia, scope, "pdf");
 
-        // PDF
         try (PDDocument doc = new PDDocument()) {
             PDRectangle pageSize = PDRectangle.LETTER;
             float margin = 40f;
             float y = pageSize.getHeight() - margin;
 
-            // Portada / encabezado
             PDPage page = new PDPage(pageSize);
             doc.addPage(page);
             try (PDPageContentStream cs = new PDPageContentStream(doc, page)) {
                 y = drawTitle(cs, "Lista de Estudiantes", "Vigentes desde " + fechaVigencia, y);
 
-                // Encabezados de tabla
                 String[] headers = {"CursoID", "Curso", "Grupo", "Identificación", "Nombre completo", "Correo"};
-                float[] widths = {60, 120, 50, 90, 170, 160}; // suma < ancho útil
+                float[] widths = {60, 120, 50, 90, 170, 160};
                 y = y - 16;
                 y = drawTableHeader(cs, margin, y, headers, widths);
 
-                // Filas (paginación simple)
                 float rowHeight = 14f;
                 for (ItemAlumno it : alumnos) {
                     String nombreCompleto = joinNames(it.est.getNombre(), it.est.getApellido1(), it.est.getApellido2());
@@ -88,7 +80,6 @@ public class ReporteServicePdf implements ReporteService {
                             y = drawTableHeader(cs2, margin, y, headers, widths);
                             y = drawRow(cs2, margin, y, row, widths, rowHeight);
                         }
-                        y -= 0; // ya actualizado
                         continue;
                     }
                     y = drawRow(cs, margin, y, row, widths, rowHeight);
@@ -103,7 +94,6 @@ public class ReporteServicePdf implements ReporteService {
 
     @Override
     public Path generarEstadisticaMatricula(LocalDate fechaVigencia, Scope scope) throws Exception {
-        // Conteo: CursoID -> (GrupoID -> cantidad)
         Map<String, String> cursoNombres = new LinkedHashMap<>();
         Map<String, Map<Integer, Integer>> conteo = new LinkedHashMap<>();
 
@@ -134,7 +124,7 @@ public class ReporteServicePdf implements ReporteService {
                 } else {
                     for (String idCurso : conteo.keySet()) {
                         String titulo = "Curso: " + idCurso + " - " + cursoNombres.getOrDefault(idCurso, "");
-                        y = ensureSpace(doc, cs, pageSize, margin, y, 40); // nueva sección si no hay espacio
+                        y = ensureSpace(doc, cs, pageSize, margin, y, 40);
                         writeLine(cs, titulo, margin, y, 12, HELVETICA_BOLD);
                         y -= 12;
 
@@ -160,8 +150,6 @@ public class ReporteServicePdf implements ReporteService {
         return out;
     }
 
-    // ─────────────────────── Lógica de datos ───────────────────────
-
     private List<ItemAlumno> recolectarAlumnos(LocalDate fechaVigencia, Scope scope) {
         List<ItemAlumno> alumnos = new ArrayList<>();
         for (Curso c : cursosFiltrados(cursoService.listarCursos(), scope)) {
@@ -186,7 +174,7 @@ public class ReporteServicePdf implements ReporteService {
 
     private List<Grupo> gruposFiltrados(Curso c, Scope scope, LocalDate fechaVig) {
         return c.grupos.stream()
-                .filter(g -> !g.getFechaFinal().isBefore(fechaVig)) // vigente si fin >= fechaVig
+                .filter(g -> !g.getFechaFinal().isBefore(fechaVig))
                 .filter(g -> scope == null
                         || scope.tipo == ScopeType.TODOS
                         || (scope.tipo == ScopeType.CURSO && c.getId().equals(scope.idCurso))
@@ -195,10 +183,8 @@ public class ReporteServicePdf implements ReporteService {
     }
 
     private Estudiante tryGetEstudianteFromMatricula(Object matricula) {
-        // 1) getEstudiante()
         Estudiante e = (Estudiante) tryInvoke(matricula, "getEstudiante");
         if (e != null) return e;
-        // 2) getIdEstudiante() -> resolver contra UsuarioService
         Object id = tryInvoke(matricula, "getIdEstudiante");
         if (id != null) {
             String sid = String.valueOf(id);
@@ -236,8 +222,6 @@ public class ReporteServicePdf implements ReporteService {
         return dir.resolve(filename);
     }
 
-    // ─────────────────────── Helpers de PDF ───────────────────────
-
     private float drawTitle(PDPageContentStream cs, String title, String subtitle, float yTop) throws IOException {
         float x = 40f;
         writeLine(cs, title, x, yTop, 16, HELVETICA_BOLD);
@@ -247,7 +231,6 @@ public class ReporteServicePdf implements ReporteService {
     }
 
     private float drawTableHeader(PDPageContentStream cs, float x, float y, String[] headers, float[] widths) throws IOException {
-        // fondo simple (línea inferior)
         writeRow(cs, x, y, headers, widths, 12, HELVETICA_BOLD);
         drawLine(cs, x, y-2, x + sum(widths), y-2);
         return y - 16;
@@ -274,14 +257,14 @@ public class ReporteServicePdf implements ReporteService {
         cs.endText();
     }
 
-    private void writeClipped(PDPageContentStream cs, String text, float x, float y, float maxWidth, int fontSize, PDType1Font font) throws IOException {
+    private void writeClipped(PDPageContentStream cs, String text, float x, float y,
+                              float maxWidth, int fontSize, PDType1Font font) throws IOException {
         if (text == null) text = "";
-        String clipped = clipToWidth(text, font, fontSize, maxWidth);
+        String clipped = clipToWidth(font, fontSize, text, maxWidth);
         writeLine(cs, clipped, x, y, fontSize, font);
     }
 
-    private String clipToWidth(String s, PDType1Font font, int fontSize, float maxWidth) throws IOException {
-        // recorta con "…" si no cabe
+    private String clipToWidth(PDType1Font font, int fontSize, String s, float maxWidth) throws IOException {
         String ell = "…";
         if (stringWidth(font, fontSize, s) <= maxWidth) return s;
         for (int i = Math.min(s.length(), 120); i > 0; i--) {
@@ -290,6 +273,7 @@ public class ReporteServicePdf implements ReporteService {
         }
         return ell;
     }
+
 
     private float stringWidth(PDType1Font font, int fontSize, String s) throws IOException {
         return font.getStringWidth(s) / 1000f * fontSize;
@@ -303,23 +287,107 @@ public class ReporteServicePdf implements ReporteService {
 
     private float sum(float[] a) { float s=0; for (float v : a) s+=v; return s; }
 
-    /** Asegura espacio; si no hay, inicia nueva página y devuelve el nuevo y. */
     private float ensureSpace(PDDocument doc, PDPageContentStream cs, PDRectangle pageSize, float margin, float y, float needed) throws IOException {
         if (y - needed >= margin) return y;
         cs.close();
         PDPage page = new PDPage(pageSize);
         doc.addPage(page);
-        PDPageContentStream next = new PDPageContentStream(doc, page);
-        // devolvemos el nuevo y available; el llamador debe continuar con 'next'
-        // para simplificar el uso, este método sólo calcula; el patrón real lo usé arriba
         return pageSize.getHeight() - margin;
     }
 
-    // DTO interno
     private static class ItemAlumno {
         final String idCurso; final String nombreCurso; final int idGrupo; final Estudiante est;
         ItemAlumno(String idCurso, String nombreCurso, int idGrupo, Estudiante est) {
             this.idCurso = idCurso; this.nombreCurso = nombreCurso; this.idGrupo = idGrupo; this.est = est;
         }
     }
+
+    @Override
+    public boolean exportarIntento(IntentoEvaluacion intento, java.io.File destino) {
+        if (intento == null || destino == null) return false;
+        java.io.File out = destino;
+        String name = destino.getName().toLowerCase();
+        if (!name.endsWith(".pdf")) {
+            out = new java.io.File(destino.getParentFile(), destino.getName() + ".pdf");
+        }
+
+        PDRectangle pageSize = PDRectangle.LETTER;
+        float margin = 40f;
+
+        try (PDDocument doc = new PDDocument()) {
+            PDPage page = new PDPage(pageSize);
+            doc.addPage(page);
+            PDPageContentStream cs = new PDPageContentStream(doc, page);
+
+            float y = pageSize.getHeight() - margin;
+
+            String est = (intento.getEstudiante() == null) ? "-"
+                    : joinNames(intento.getEstudiante().getNombre(),
+                    intento.getEstudiante().getApellido1(),
+                    intento.getEstudiante().getApellido2());
+            String eval = (intento.getEvaluacion() == null) ? "-"
+                    : intento.getEvaluacion().getNombre();
+            String grupo = (intento.getGrupo() == null) ? "-"
+                    : String.valueOf(intento.getGrupo().getIdGrupo());
+            int puntajeTotal = (intento.getEvaluacion() == null) ? 0
+                    : intento.getEvaluacion().getPuntajeTotal();
+
+            DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+            String ini = intento.getFechaHoraInicio() == null ? "-" : intento.getFechaHoraInicio().format(fmt);
+            String fin = intento.getFechaHoraFinal() == null ? "-" : intento.getFechaHoraFinal().format(fmt);
+
+            y = drawTitle(cs, "Reporte de intento de evaluación", "", y);
+            writeLine(cs, "Estudiante: " + est, margin, y, 12, HELVETICA); y -= 14;
+            writeLine(cs, "Evaluación: " + eval, margin, y, 12, HELVETICA); y -= 14;
+            writeLine(cs, "Grupo: " + grupo, margin, y, 12, HELVETICA); y -= 14;
+            writeLine(cs, "Inicio: " + ini, margin, y, 12, HELVETICA); y -= 14;
+            writeLine(cs, "Fin: " + fin, margin, y, 12, HELVETICA); y -= 14;
+            writeLine(cs, "Puntaje: " + intento.getPuntajeObtenido() + " / " + puntajeTotal, margin, y, 12, HELVETICA); y -= 14;
+            writeLine(cs, String.format("Calificación: %.2f", intento.getCalificacion()), margin, y, 12, HELVETICA); y -= 18;
+
+            List<IPregunta> preguntas = (intento.getEvaluacion() == null) ? null : intento.getEvaluacion().getPreguntas();
+            List<RespuestaEstudiante> resps = intento.getRespuestasEstudiante();
+
+            if (preguntas != null && !preguntas.isEmpty()) {
+                writeLine(cs, "Detalle de preguntas", margin, y, 12, HELVETICA_BOLD); y -= 14;
+
+                for (int i = 0; i < preguntas.size(); i++) {
+                    IPregunta p = preguntas.get(i);
+                    RespuestaEstudiante re = (resps != null && i < resps.size()) ? resps.get(i) : null;
+
+                    if (y - 56 < margin) {
+                        cs.close();
+                        page = new PDPage(pageSize);
+                        doc.addPage(page);
+                        cs = new PDPageContentStream(doc, page);
+                        y = pageSize.getHeight() - margin;
+                    }
+
+                    writeLine(cs, "Pregunta " + (i + 1) + ": " + safe(p.obtenerDescripcion()), margin, y, 12, HELVETICA); y -= 14;
+                    writeLine(cs, "Tipo: " + String.valueOf(p.getTipo()), margin, y, 11, HELVETICA); y -= 12;
+                    writeLine(cs, "Puntos: " + p.obtenerPuntos(), margin, y, 11, HELVETICA); y -= 12;
+
+                    if (re != null) {
+                        writeLine(cs, "Puntos obtenidos: " + re.getPuntosObtenidos(), margin, y, 11, HELVETICA); y -= 12;
+                        List<Integer> ord = re.getOrdenesSeleccionados();
+                        writeLine(cs, "Selecciones: " + (ord == null ? "—" : ord.toString()), margin, y, 11, HELVETICA); y -= 14;
+                    } else {
+                        writeLine(cs, "Sin respuesta del estudiante.", margin, y, 11, HELVETICA); y -= 14;
+                    }
+                }
+            } else {
+                writeLine(cs, "No hay preguntas para mostrar.", margin, y, 12, HELVETICA); y -= 14;
+            }
+
+            cs.close();
+            if (out.getParentFile() != null) out.getParentFile().mkdirs();
+            doc.save(out);
+            return true;
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return false;
+        }
+    }
 }
+
+

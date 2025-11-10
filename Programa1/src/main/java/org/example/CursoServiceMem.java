@@ -128,4 +128,92 @@ public class CursoServiceMem implements CursoService {
         if (inicio == null || fin == null) throw new IllegalArgumentException("Fechas requeridas.");
         if (fin.isBefore(inicio)) throw new IllegalArgumentException("La fecha final no puede ser anterior al inicio.");
     }
+
+    public void seedCursosDemo() {
+        // Tomamos el primer valor disponible por si cambian los enums (evita fallos por nombres).
+        TipoModalidad modalidadDef = TipoModalidad.values()[0];
+        TipoCurso tipoDef = TipoCurso.TEORICO;
+
+        // Cursos de ejemplo (usa tu constructor: id, nombre, descripcion, hrsDia, modalidad, min, max, tipo, aprob)
+        Curso c1 = new Curso("C10100", "Programación I", "Introducción a Java y fundamentos de programación",
+                2, modalidadDef, 5, 20, tipoDef, 70);
+
+        Curso c2 = new Curso("C10200", "Estructuras de Datos", "Listas, colas, pilas, árboles y complejidad básica",
+                2, modalidadDef, 5, 20, tipoDef, 70);
+
+        Curso c3 = new Curso("C10300", "Bases de Datos I", "Modelo relacional, normalización y SQL básico",
+                2, modalidadDef, 5, 20, tipoDef, 70);
+
+        Curso c4 = new Curso("C10400", "Redes I", "Conceptos de redes, OSI/TCP-IP y direccionamiento",
+                2, modalidadDef, 5, 20, tipoDef, 70);
+
+        // Intentamos agregarlos (si ya existen por ID, se ignora el error y continúa)
+        try { agregarCurso(c1); } catch (Exception ignored) {}
+        try { agregarCurso(c2); } catch (Exception ignored) {}
+        try { agregarCurso(c3); } catch (Exception ignored) {}
+        try { agregarCurso(c4); } catch (Exception ignored) {}
+    }
+
+    public void seedGruposDemo(UsuarioServiceMem usuarioService) {
+        try {
+            // 1) Buscar curso Programación I
+            Curso c1 = listarCursos().stream()
+                    .filter(c -> "C10100".equals(c.getId()))
+                    .findFirst()
+                    .orElse(null);
+
+            // 2) Buscar profesor Mario Rojas (P200)
+            Profesor p1 = usuarioService.listarProfesores().stream()
+                    .filter(p -> "P200".equals(p.getIdUsuario()))
+                    .findFirst()
+                    .orElse(null);
+
+            if (c1 == null || p1 == null) {
+                // No sembramos si falta alguno
+                return;
+            }
+
+            // 3) Variables para fechas del grupo
+            LocalDate fechaInicio = LocalDate.now();
+            LocalDate fechaFinal  = fechaInicio.plusMonths(4);
+
+            // 4) Crear grupo usando el CONSTRUCTOR (ID se autogenera)
+            Grupo g = new Grupo(c1, fechaInicio, fechaFinal);
+
+            // 5) Asignar profesor (tu constructor lo deja en null)
+            g.setProfesor(p1);
+
+            // 6) Asegurar listas MUTABLES en curso y profesor
+            if (c1.grupos == null) {
+                c1.grupos = new java.util.ArrayList<>();
+            } else if (!(c1.grupos instanceof java.util.ArrayList)) {
+                c1.grupos = new java.util.ArrayList<>(c1.grupos);
+            }
+            if (p1.getGrupos() == null) {
+                p1.setGrupos(new java.util.ArrayList<>());
+            } else if (!(p1.getGrupos() instanceof java.util.ArrayList)) {
+                p1.setGrupos(new java.util.ArrayList<>(p1.getGrupos()));
+            }
+
+            // 7) Vincular en ambos lados evitando duplicados por ID
+            boolean yaEnCurso = c1.grupos.stream().anyMatch(xx -> xx != null && xx.getIdGrupo() == g.getIdGrupo());
+            if (!yaEnCurso) c1.grupos.add(g);
+
+            boolean yaEnProf = p1.getGrupos().stream().anyMatch(xx -> xx != null && xx.getIdGrupo() == g.getIdGrupo());
+            if (!yaEnProf) p1.getGrupos().add(g);
+
+            // (Opcional) Inicializaciones extra ya las hace tu constructor:
+            // g.setMatriculas(new ArrayList<>()); g.setEvaluacionesAsignadas(new ArrayList<>());
+            // así que no hace falta repetirlas.
+
+            // (Opcional) Log para saber qué ID autogeneró:
+            System.out.println("[seed] Grupo creado ID=" + g.getIdGrupo()
+                    + " para curso=" + c1.getId() + " profesor=" + p1.getIdUsuario());
+
+        } catch (Exception ignored) {
+            // silencioso para no romper el arranque si algo no está listo
+        }
+    }
+
+
 }

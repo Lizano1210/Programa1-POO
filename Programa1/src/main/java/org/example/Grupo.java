@@ -71,6 +71,9 @@ public class Grupo {
     public void setProfesor(Profesor profesor) {
         this.profesor = profesor;
     }
+    public void setEvaluacionesAsignadas(List<EvaluacionAsignada> nuevasEval) {
+        this.evaluacionesAsignadas = nuevasEval;
+    }
 
     // Métodos principales
 
@@ -285,5 +288,9 @@ public class Grupo {
      */
     public static void setContador(int valor) {
         contadorId = valor;
+    }
+
+    public void setMatriculas(List<Matricula> nuevaLista) {
+        this.matriculas = nuevaLista;
     }
 }

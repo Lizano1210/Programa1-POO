@@ -12,9 +12,9 @@ public class Evaluacion {
     static int contador = 1;           // Para no repetir id    
     int id;
     String nombre;
-    String instrucciones; 
+    String instrucciones;
     List<String> objetivos = new ArrayList<>();
-    int duracionMinutos;     
+    int duracionMinutos;
     boolean preguntasAleatorias;
     boolean opcionesAleatorias;
     List<IPregunta> preguntas = new ArrayList<>();
@@ -87,7 +87,7 @@ public class Evaluacion {
         if (duracionMinutos < 1)
             throw new IllegalArgumentException("Duración inválida (>=1).");
 
-        // asignamos si todo sirve
+        // asignamos si sirve
         this.nombre = nombre.trim();
         this.instrucciones = instrucciones.trim();
         this.objetivos = new ArrayList<>();
@@ -119,7 +119,7 @@ public class Evaluacion {
         return asignacion.fechaHoraInicio.isAfter(LocalDateTime.now());
     }
 
-    /** Versión agregada: true si TODAS las asociaciones pueden desasociarse “hoy”. */
+    /** Versión agregada: true si TODAS las asociaciones pueden desasociarse "hoy". */
     public boolean canDesasociar() {
         if (gruposAsociados == null || gruposAsociados.isEmpty()) return true;
         LocalDateTime now = LocalDateTime.now();
@@ -141,6 +141,88 @@ public class Evaluacion {
     public List<IPregunta> getPreguntas() { return Collections.unmodifiableList(preguntas); }
     public int getPuntajeTotal() { return puntajeTotal; }
     public List<EvaluacionAsignada> getGruposAsociados() { return Collections.unmodifiableList(gruposAsociados); }
+
+    // Setters
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public void setNombre(String nombre) {
+        if (nombre == null || nombre.trim().length() < 5 || nombre.trim().length() > 20)
+            throw new IllegalArgumentException("Nombre inválido (5-20).");
+        this.nombre = nombre.trim();
+    }
+
+    public void setInstrucciones(String instrucciones) {
+        if (instrucciones == null || instrucciones.trim().length() < 5 || instrucciones.trim().length() > 400)
+            throw new IllegalArgumentException("Instrucciones inválidas (5-400).");
+        this.instrucciones = instrucciones.trim();
+    }
+
+    public void setObjetivos(List<String> objetivos) {
+        if (objetivos == null || objetivos.isEmpty())
+            throw new IllegalArgumentException("Objetivos requeridos.");
+        for (String obj : objetivos) {
+            if (obj == null) throw new IllegalArgumentException("Objetivo nulo.");
+            int len = obj.trim().length();
+            if (len < 10 || len > 40)
+                throw new IllegalArgumentException("Objetivo inválido (10-40): " + obj);
+        }
+        this.objetivos = new ArrayList<>();
+        for (String s : objetivos) this.objetivos.add(s.trim());
+    }
+
+    public void setDuracionMinutos(int duracionMinutos) {
+        if (duracionMinutos < 1)
+            throw new IllegalArgumentException("Duración inválida (>=1).");
+        this.duracionMinutos = duracionMinutos;
+    }
+
+    public void setPreguntasAleatorias(boolean preguntasAleatorias) {
+        this.preguntasAleatorias = preguntasAleatorias;
+    }
+
+    public void setOpcionesAleatorias(boolean opcionesAleatorias) {
+        this.opcionesAleatorias = opcionesAleatorias;
+    }
+
+    public void setPreguntas(List<IPregunta> preguntas) {
+        if (preguntas == null) {
+            this.preguntas = new ArrayList<>();
+        } else {
+            this.preguntas = new ArrayList<>(preguntas);
+        }
+        calcularPuntajeTotal();
+    }
+
+    public void setPuntajeTotal(int puntajeTotal) {
+        this.puntajeTotal = puntajeTotal;
+    }
+
+    public void setGruposAsociados(List<EvaluacionAsignada> gruposAsociados) {
+        if (gruposAsociados == null) {
+            this.gruposAsociados = new ArrayList<>();
+        } else {
+            this.gruposAsociados = new ArrayList<>(gruposAsociados);
+        }
+    }
+
+    // Auxiliares
+    public void moverPregunta(int from, int to) {
+        if (preguntas == null) return;
+        int n = preguntas.size();
+        if (from < 0 || to < 0 || from >= n || to >= n || from == to) return;
+        java.util.Collections.swap(preguntas, from, to);
+        calcularPuntajeTotal();
+    }
+
+    public void eliminarPregunta(int idx) {
+        if (preguntas == null) return;
+        if (idx < 0 || idx >= preguntas.size()) return;
+        preguntas.remove(idx);
+        calcularPuntajeTotal();
+    }
+
 
     @Override public String toString() {
         return "Evaluación{" +

@@ -48,6 +48,8 @@ public class Matricula {
         return calificacionFinal;
     }
 
+    public void  setCalificacionFinal(double nota) {this.calificacionFinal = nota;}
+
     public List<IntentoEvaluacion> obtenerIntentosEvaluacion() {
         return Collections.unmodifiableList(intentosEvaluacion);
     }
