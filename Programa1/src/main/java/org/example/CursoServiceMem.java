@@ -194,7 +194,7 @@ public class CursoServiceMem implements CursoService {
                     .orElse(null);
 
             Profesor p1 = usuarioService.listarProfesores().stream()
-                    .filter(p -> "P200".equals(p.getIdUsuario()))
+                    .filter(p -> "P200USER!".equals(p.getIdUsuario()))
                     .findFirst()
                     .orElse(null);
 

@@ -30,7 +30,8 @@ public class AdminUsuariosPanel extends JPanel {
     private final ProfesoresModel profesoresModel = new ProfesoresModel();
 
     /** Manejador de autenticación (para contraseñas y roles). */
-    private final Autenticacion auth = new Autenticacion();
+    private final Autenticacion auth;
+
 
     // -- Constructor --
 
@@ -39,8 +40,9 @@ public class AdminUsuariosPanel extends JPanel {
      *
      * @param servicio servicio que administra usuarios
      */
-    public AdminUsuariosPanel(UsuarioService servicio) {
+    public AdminUsuariosPanel(UsuarioService servicio, Autenticacion auth) {
         this.servicio = servicio;
+        this.auth = auth;
         setLayout(new BorderLayout());
 
         // -- Pestañas por tipo de usuario --
@@ -98,7 +100,7 @@ public class AdminUsuariosPanel extends JPanel {
         });
 
         btnNuevo.addActionListener(e -> {
-            AdminEstudianteDialog dlg = new AdminEstudianteDialog(SwingUtilities.getWindowAncestor(this), null);
+            AdminEstudianteDialog dlg = new AdminEstudianteDialog(SwingUtilities.getWindowAncestor(this), null, auth, servicio);
             dlg.setVisible(true);
             Estudiante nuevo = dlg.getResultado();
             if (nuevo != null) {
@@ -121,7 +123,7 @@ public class AdminUsuariosPanel extends JPanel {
                 showInfo("Seleccione un estudiante.");
                 return;
             }
-            AdminEstudianteDialog dlg = new AdminEstudianteDialog(SwingUtilities.getWindowAncestor(this), sel);
+            AdminEstudianteDialog dlg = new AdminEstudianteDialog(SwingUtilities.getWindowAncestor(this), sel, auth, servicio);
             dlg.setVisible(true);
             Estudiante editado = dlg.getResultado();
             if (editado != null) {

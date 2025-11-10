@@ -22,6 +22,8 @@ public class AdminDashboardPanel extends JPanel {
     /** Servicio de reportes, encargado de generar los informes del sistema. */
     private final ReporteService reporteService;
 
+    private final Autenticacion auth;
+
     /**
      * Crea el panel principal del administrador.
      *
@@ -30,10 +32,11 @@ public class AdminDashboardPanel extends JPanel {
      * @param reporteService servicio de reportes
      */
     public AdminDashboardPanel(UsuarioService usuarioService, CursoService cursoService,
-                               ReporteService reporteService) {
+                               ReporteService reporteService, Autenticacion auth) {
         this.usuarioService = usuarioService;
         this.cursoService = cursoService;
         this.reporteService = reporteService;
+        this.auth = auth;
 
         setLayout(new BorderLayout());
 
@@ -51,7 +54,7 @@ public class AdminDashboardPanel extends JPanel {
         add(nav, BorderLayout.WEST);
 
         // --- Paneles centrales con CardLayout ---
-        centerCards.add(new AdminUsuariosPanel(usuarioService), "USUARIOS");
+        centerCards.add(new AdminUsuariosPanel(usuarioService, auth), "USUARIOS");
         centerCards.add(new AdminCursosPanel(cursoService, usuarioService), "CURSOS");
         centerCards.add(new AdminReportesPanel(cursoService, reporteService), "REPORTES");
 

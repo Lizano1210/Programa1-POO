@@ -82,13 +82,13 @@ public class Ventana extends JFrame {
         ((CursoServiceMem) cursoService).seedGruposDemo(usuarioService);
 
         evaluacionService = new EvaluacionServiceMem(usuarioService, cursoService);
-        ((EvaluacionServiceMem) evaluacionService).seedEvaluacionesDemo5("P200", usuarioService);
+        ((EvaluacionServiceMem) evaluacionService).seedEvaluacionesDemo5("P200USER!", usuarioService);
 
         MatriculaService matriculaService = new MatriculaServiceMem(usuarioService, cursoService);
         reporteService = new ReporteServicePdf(cursoService, usuarioService);
         intentoService = new IntentoServiceMem();
 
-        AdminDashboardPanel admin = new AdminDashboardPanel(usuarioService, cursoService, reporteService);
+        AdminDashboardPanel admin = new AdminDashboardPanel(usuarioService, cursoService, reporteService, auth);
         mainContainer.add(admin, "ADMIN");
     }
 

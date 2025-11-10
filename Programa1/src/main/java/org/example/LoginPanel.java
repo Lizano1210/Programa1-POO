@@ -1,15 +1,17 @@
 package org.example;
 
 import javax.swing.*;
+import javax.swing.border.CompoundBorder;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
 import java.awt.*;
 import java.util.function.BiConsumer;
 
 /**
- * Panel gráfico de inicio de sesión.
+ * Panel gráfico de inicio de sesión con estilo simple tipo "card".
  * <p>
- * Permite al usuario ingresar su identificación y contraseña, con opción para mostrar/ocultar la contraseña.
- * Incluye botones para iniciar sesión y recuperar contraseña, con callbacks configurables
- * para manejar las acciones correspondientes.
+ * Mantiene exactamente la misma lógica y API pública: callbacks de login,
+ * recuperación y manejo de mensajes; solo se ajusta la presentación visual.
  * </p>
  */
 public class LoginPanel extends JPanel {
@@ -37,60 +39,85 @@ public class LoginPanel extends JPanel {
     // -- Constructor --
 
     /**
-     * Crea el formulario de inicio de sesión con todos sus componentes.
+     * Crea el formulario de inicio de sesión con estilo visual.
      * <p>
-     * Organiza los elementos en una cuadrícula, asignando posiciones y configurando los botones,
-     * el campo de contraseña y el checkbox para mostrar/ocultar caracteres.
+     * El contenido se presenta centrado dentro de una "card" con padding,
+     * título centrado, y espaciado consistente entre controles.
      * </p>
      */
     public LoginPanel() {
+        // Fondo general suave y contenedor centrado
         setLayout(new GridBagLayout());
+        setBackground(new Color(245, 247, 250)); // gris muy claro
+
+        JPanel card = new JPanel(new GridBagLayout());
+        card.setOpaque(true);
+        card.setBackground(Color.WHITE);
+        card.setBorder(new CompoundBorder(
+                new LineBorder(new Color(220, 224, 230), 1, true), // borde suave y redondeado
+                new EmptyBorder(16, 18, 18, 18) // padding interno
+        ));
+
         GridBagConstraints c = new GridBagConstraints();
-        c.insets = new Insets(6, 6, 6, 6);
+        c.insets = new Insets(8, 8, 8, 8);
         c.fill = GridBagConstraints.HORIZONTAL;
 
+        // -- Fila 0: Título centrado --
         JLabel title = new JLabel("Iniciar sesión");
-        title.setFont(title.getFont().deriveFont(Font.BOLD, 20f));
+        title.setFont(title.getFont().deriveFont(Font.BOLD, 22f));
+        title.setHorizontalAlignment(SwingConstants.CENTER);
 
-        // -- Fila 0: título --
         c.gridx = 0; c.gridy = 0; c.gridwidth = 3;
-        add(title, c);
+        c.weightx = 1.0; c.fill = GridBagConstraints.HORIZONTAL;
+        card.add(title, c);
 
-        // -- Fila 1: identificación --
+        // -- Fila 1: Identificación --
         c.gridwidth = 1; c.weightx = 0;
         JLabel lblId = new JLabel("Identificación");
         c.gridx = 0; c.gridy = 1;
-        add(lblId, c);
+        card.add(lblId, c);
 
-        c.gridx = 1; c.gridy = 1; c.weightx = 1;
-        add(txtIdentificacion, c);
+        c.gridx = 1; c.gridy = 1; c.weightx = 1.0;
+        txtIdentificacion.setToolTipText("Ingrese su identificación");
+        card.add(txtIdentificacion, c);
 
         c.gridx = 2; c.gridy = 1; c.weightx = 0;
-        add(Box.createHorizontalStrut(1), c);
+        card.add(Box.createHorizontalStrut(1), c);
 
-        // -- Fila 2: contraseña y checkbox --
+        // -- Fila 2: Contraseña + mostrar --
         JLabel lblPass = new JLabel("Contraseña");
         c.gridx = 0; c.gridy = 2; c.weightx = 0;
-        add(lblPass, c);
+        card.add(lblPass, c);
 
-        c.gridx = 1; c.gridy = 2; c.weightx = 1;
-        add(pwdContrasena, c);
+        c.gridx = 1; c.gridy = 2; c.weightx = 1.0;
+        pwdContrasena.setToolTipText("Ingrese su contraseña");
+        card.add(pwdContrasena, c);
 
         c.gridx = 2; c.gridy = 2; c.weightx = 0;
-        add(chkMostrar, c);
+        chkMostrar.setOpaque(false);
+        card.add(chkMostrar, c);
 
-        // -- Fila 3: botón ingresar --
-        c.gridx = 1; c.gridy = 3; c.gridwidth = 1;
-        add(btnIngresar, c);
+        // -- Fila 3: Botón Ingresar --
+        c.gridx = 0; c.gridy = 3; c.gridwidth = 3; c.weightx = 1.0;
+        JPanel rowBtns = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+        rowBtns.setOpaque(false);
+        estilizarBoton(btnIngresar);
+        estilizarBotonSecundario(btnRecuperar);
+        rowBtns.add(btnIngresar);
+        rowBtns.add(btnRecuperar);
+        card.add(rowBtns, c);
 
-        // -- Fila 4: botón recuperar contraseña --
-        c.gridx = 1; c.gridy = 4;
-        add(btnRecuperar, c);
-
-        // -- Fila 5: mensajes --
-        c.gridx = 0; c.gridy = 5; c.gridwidth = 3;
+        // -- Fila 4: Mensaje centrado --
+        c.gridx = 0; c.gridy = 4; c.gridwidth = 3; c.weightx = 1.0;
         lblMensaje.setForeground(new Color(180, 0, 0));
-        add(lblMensaje, c);
+        lblMensaje.setHorizontalAlignment(SwingConstants.CENTER);
+        card.add(lblMensaje, c);
+
+        // Centrar la "card" en el panel principal
+        GridBagConstraints root = new GridBagConstraints();
+        root.gridx = 0; root.gridy = 0;
+        root.anchor = GridBagConstraints.CENTER;
+        add(card, root);
 
         // Guardar el carácter por defecto de ocultamiento
         this.echoDefault = pwdContrasena.getEchoChar();
@@ -99,7 +126,7 @@ public class LoginPanel extends JPanel {
         chkMostrar.addActionListener(e ->
                 pwdContrasena.setEchoChar(chkMostrar.isSelected() ? (char) 0 : echoDefault));
 
-        // Acciones de los botones
+        // Acciones de los botones (misma lógica)
         btnIngresar.addActionListener(e -> intentarLogin());
         btnRecuperar.addActionListener(e -> {
             if (onRecover != null) onRecover.accept(txtIdentificacion.getText().trim());
@@ -150,7 +177,29 @@ public class LoginPanel extends JPanel {
             }
         }
     }
+
+    // -- Estilos auxiliares (solo presentación) --
+
+    /** Estilo primario para botones (relleno y tipografía). */
+    private void estilizarBoton(JButton b) {
+        b.setFocusPainted(false);
+        b.setFont(b.getFont().deriveFont(Font.BOLD));
+        b.setBackground(new Color(33, 150, 243));
+        b.setForeground(Color.WHITE);
+        b.setBorder(new EmptyBorder(8, 14, 8, 14));
+    }
+
+    /** Estilo secundario para botones planos. */
+    private void estilizarBotonSecundario(JButton b) {
+        b.setFocusPainted(false);
+        b.setFont(b.getFont().deriveFont(Font.PLAIN));
+        b.setContentAreaFilled(false);
+        b.setBorder(new EmptyBorder(8, 10, 8, 10));
+        b.setForeground(new Color(33, 150, 243));
+        b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+    }
 }
+
 
 
 

@@ -57,17 +57,17 @@ public class UsuarioServiceMem implements UsuarioService {
         // -- Estudiantes --
         Estudiante e1 = new Estudiante(
                 "Ana", "Zúñiga", "Soto",
-                "E100", "88880001", "ana.zuniga@demo.com", "San José, centro",
+                "E100USER!", "88880001", "ana.zuniga@demo.com", "San José, centro",
                 "UCR", List.of("Algoritmos", "Progra")
         );
         Estudiante e2 = new Estudiante(
                 "Bruno", "Mora", "Lopez",
-                "E101", "88880002", "bruno.mora@demo.com", "Heredia, centro",
+                "E101USER!", "88880002", "bruno.mora@demo.com", "Heredia, centro",
                 "TEC", List.of("Estructuras", "Bases de Datos I")
         );
         Estudiante e3 = new Estudiante(
                 "Carla", "Rojas", "Vargas",
-                "E102", "88880003", "carla.rojas@demo.com", "Alajuela, centro",
+                "E102USER!", "88880003", "carla.rojas@demo.com", "Alajuela, centro",
                 "UNA", List.of("Redes", "Sistemas")
         );
         agregarEstudiante(e1);
@@ -90,11 +90,11 @@ public class UsuarioServiceMem implements UsuarioService {
         // -- Profesores --
         Profesor p1 = new Profesor(
                 "Mario", "Rojas", "Céspedes",
-                "P200", "88880010", "mario.rojas@demo.com", "Cartago, centro"
+                "P200USER!", "88880010", "mario.rojas@demo.com", "Cartago, centro"
         );
         Profesor p2 = new Profesor(
                 "Natalia", "Solis", "Cambronero",
-                "P201", "88880011", "natalia.solis@demo.com", "San José, Escazú"
+                "P201USER!", "88880011", "natalia.solis@demo.com", "San José, Escazú"
         );
         agregarProfesor(p1);
         agregarProfesor(p2);
